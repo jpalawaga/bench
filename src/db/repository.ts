@@ -1,0 +1,159 @@
+import type {
+  Exercise,
+  ExerciseSet,
+  ID,
+  SetGoal,
+  Workout,
+} from "@/types/models";
+import { db } from "./database";
+import { SEED_EXERCISES } from "./seed";
+
+export interface WorkoutRepository {
+  // Workouts
+  saveWorkout(workout: Workout): Promise<void>;
+  getWorkout(id: ID): Promise<Workout | undefined>;
+  getAllWorkouts(): Promise<Workout[]>;
+  deleteWorkout(id: ID): Promise<void>;
+  getActiveWorkout(): Promise<Workout | undefined>;
+
+  // Exercises
+  getAllExercises(): Promise<Exercise[]>;
+  searchExercises(query: string): Promise<Exercise[]>;
+  addExercise(exercise: Exercise): Promise<void>;
+
+  // Frequency
+  getFrequentExercises(limit: number): Promise<Exercise[]>;
+
+  // Goal lookup
+  getLastActuals(exerciseId: ID): Promise<ExerciseSet[] | undefined>;
+  getNextSessionTargets(exerciseId: ID): Promise<SetGoal[] | undefined>;
+}
+
+class DexieWorkoutRepository implements WorkoutRepository {
+  private seeded = false;
+
+  private async ensureSeeded(): Promise<void> {
+    if (this.seeded) return;
+    const count = await db.exercises.count();
+    if (count === 0) {
+      await db.exercises.bulkAdd(SEED_EXERCISES);
+    }
+    this.seeded = true;
+  }
+
+  async saveWorkout(workout: Workout): Promise<void> {
+    await db.workouts.put(workout);
+  }
+
+  async getWorkout(id: ID): Promise<Workout | undefined> {
+    return db.workouts.get(id);
+  }
+
+  async getAllWorkouts(): Promise<Workout[]> {
+    return db.workouts.orderBy("startedAt").reverse().toArray();
+  }
+
+  async deleteWorkout(id: ID): Promise<void> {
+    await db.workouts.delete(id);
+  }
+
+  async getActiveWorkout(): Promise<Workout | undefined> {
+    return db.workouts.where("status").equals("active").first();
+  }
+
+  async getAllExercises(): Promise<Exercise[]> {
+    await this.ensureSeeded();
+    return db.exercises.orderBy("name").toArray();
+  }
+
+  async searchExercises(query: string): Promise<Exercise[]> {
+    await this.ensureSeeded();
+    if (!query.trim()) {
+      return this.getAllExercises();
+    }
+    const lower = query.toLowerCase();
+    return db.exercises
+      .filter((ex) => ex.name.toLowerCase().includes(lower))
+      .sortBy("name");
+  }
+
+  async addExercise(exercise: Exercise): Promise<void> {
+    await db.exercises.add(exercise);
+  }
+
+  async getFrequentExercises(limit: number): Promise<Exercise[]> {
+    await this.ensureSeeded();
+    const workouts = await db.workouts
+      .where("status")
+      .equals("completed")
+      .toArray();
+
+    // Count how many workouts each exercise appears in
+    const counts = new Map<ID, number>();
+    for (const workout of workouts) {
+      const seen = new Set<ID>();
+      for (const block of workout.blocks) {
+        for (const ex of block.exercises) {
+          if (!seen.has(ex.exerciseId)) {
+            seen.add(ex.exerciseId);
+            counts.set(ex.exerciseId, (counts.get(ex.exerciseId) ?? 0) + 1);
+          }
+        }
+      }
+    }
+
+    if (counts.size === 0) return [];
+
+    // Sort by frequency descending, take top N
+    const topIds = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id]) => id);
+
+    // Fetch the Exercise objects and preserve frequency order
+    const exercises = await db.exercises.bulkGet(topIds);
+    return exercises.filter((e): e is Exercise => e !== undefined);
+  }
+
+  async getLastActuals(exerciseId: ID): Promise<ExerciseSet[] | undefined> {
+    const workouts = await db.workouts
+      .where("status")
+      .equals("completed")
+      .reverse()
+      .sortBy("startedAt");
+
+    for (const workout of workouts) {
+      for (const block of workout.blocks) {
+        if (block.status !== "finished") continue;
+        const match = block.exercises.find(
+          (ex) => ex.exerciseId === exerciseId,
+        );
+        if (match) return match.sets;
+      }
+    }
+    return undefined;
+  }
+
+  async getNextSessionTargets(
+    exerciseId: ID,
+  ): Promise<SetGoal[] | undefined> {
+    const workouts = await db.workouts
+      .where("status")
+      .equals("completed")
+      .reverse()
+      .sortBy("startedAt");
+
+    for (const workout of workouts) {
+      for (const block of workout.blocks) {
+        if (block.status !== "finished") continue;
+        const match = block.exercises.find(
+          (ex) => ex.exerciseId === exerciseId,
+        );
+        if (match?.nextSessionTargets) return match.nextSessionTargets;
+      }
+    }
+    return undefined;
+  }
+}
+
+export const repository: WorkoutRepository = new DexieWorkoutRepository();
