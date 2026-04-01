@@ -17,10 +17,12 @@ export function BlockListView() {
     setActiveBlock(index);
     if (block.status === "planning") {
       setView("new-block");
-    } else if (block.status === "in-progress") {
+    } else if (
+      block.status === "in-progress" ||
+      block.status === "finished"
+    ) {
       setView("block-in-progress");
     }
-    // Finished blocks don't navigate anywhere from here
   };
 
   return (

@@ -25,7 +25,7 @@ export function GoalSettingView() {
           targets.map((t, i) => ({
             id: generateId(),
             setNumber: i + 1,
-            goal: { ...t, isProposed: true },
+            goal: { ...t, isProposed: true, proposalSource: "planned" },
             actual: { reps: null, weight: null },
           })),
         );
@@ -43,6 +43,7 @@ export function GoalSettingView() {
               reps: s.actual.reps ?? s.goal.reps,
               weight: s.actual.weight ?? s.goal.weight,
               isProposed: true,
+              proposalSource: "previous",
             },
             actual: { reps: null, weight: null },
           })),
@@ -74,7 +75,15 @@ export function GoalSettingView() {
     setSets((prev) =>
       prev.map((s, i) =>
         i === index
-          ? { ...s, goal: { ...s.goal, [field]: value, isProposed: false } }
+          ? {
+              ...s,
+              goal: {
+                ...s.goal,
+                [field]: value,
+                isProposed: false,
+                proposalSource: undefined,
+              },
+            }
           : s,
       ),
     );
@@ -88,7 +97,11 @@ export function GoalSettingView() {
         id: generateId(),
         setNumber: prev.length + 1,
         goal: lastSet
-          ? { ...lastSet.goal, isProposed: false }
+          ? {
+              ...lastSet.goal,
+              isProposed: false,
+              proposalSource: undefined,
+            }
           : { reps: 0, weight: 0, isProposed: false },
         actual: { reps: null, weight: null },
       },

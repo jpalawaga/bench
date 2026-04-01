@@ -24,10 +24,12 @@ export function WorkoutPage() {
   const [loading, setLoading] = useState(true);
 
   const currentView = useWorkoutStore((s) => s.currentView);
+  const activeBlockIndex = useWorkoutStore((s) => s.activeBlockIndex);
   const loadWorkout = useWorkoutStore((s) => s.loadWorkout);
   const setView = useWorkoutStore((s) => s.setView);
   const workout = useWorkoutStore((s) => s.workout);
   const reset = useWorkoutStore((s) => s.reset);
+  const activeBlock = workout?.blocks[activeBlockIndex];
 
   useEffect(() => {
     if (!workoutId) {
@@ -67,13 +69,19 @@ export function WorkoutPage() {
         setView("exercise-select");
         break;
       case "block-in-progress":
-        // Don't allow navigating back from in-progress
+        if (activeBlock?.status === "finished") {
+          setView("block-list");
+        }
         break;
       case "block-finished":
         setView("block-list");
         break;
     }
   };
+
+  const canGoBack =
+    currentView !== "block-list" &&
+    (currentView !== "block-in-progress" || activeBlock?.status === "finished");
 
   if (loading) {
     return (
@@ -103,7 +111,7 @@ export function WorkoutPage() {
   return (
     <div className="min-h-dvh flex flex-col px-4 pb-safe-bottom">
       <header className="py-4 flex items-center gap-3">
-        {currentView !== "block-list" && (
+        {canGoBack && (
           <button
             onClick={handleBack}
             className="text-text-secondary active:text-text-primary p-1 -ml-1 min-h-0"

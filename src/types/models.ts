@@ -20,6 +20,7 @@ export interface SetGoal {
   reps: number;
   weight: number; // lbs
   isProposed: boolean;
+  proposalSource?: "planned" | "previous";
 }
 
 export interface SetActual {

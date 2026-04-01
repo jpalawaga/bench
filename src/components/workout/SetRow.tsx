@@ -1,5 +1,20 @@
 import type { ExerciseSet } from "@/types/models";
 
+function getProposalLabel(set: ExerciseSet): string | null {
+  if (!set.goal.isProposed) return null;
+  if (set.goal.proposalSource === "planned") return "PLANNED";
+  if (set.goal.proposalSource === "previous") return "PREV";
+  return "PLANNED";
+}
+
+function getProposalClasses(set: ExerciseSet): string {
+  if (set.goal.proposalSource === "previous") {
+    return "border-emerald-400/30 bg-emerald-400/12 text-emerald-300";
+  }
+
+  return "border-proposed/35 bg-proposed/12 text-proposed";
+}
+
 interface SetRowProps {
   set: ExerciseSet;
   onRepsChange: (reps: number) => void;
@@ -15,6 +30,8 @@ export function SetRow({
   onRemove,
   canRemove,
 }: SetRowProps) {
+  const proposalLabel = getProposalLabel(set);
+
   return (
     <div className="flex items-center gap-2">
       <span className="text-text-muted text-sm w-8 shrink-0">
@@ -52,8 +69,12 @@ export function SetRow({
         <span className="text-text-muted text-sm">lbs</span>
       </div>
 
-      {set.goal.isProposed && (
-        <span className="text-proposed text-xs shrink-0">Proposed</span>
+      {proposalLabel && (
+        <span
+          className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold tracking-[0.14em] ${getProposalClasses(set)}`}
+        >
+          {proposalLabel}
+        </span>
       )}
 
       {canRemove && (

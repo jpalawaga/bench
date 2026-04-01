@@ -8,6 +8,11 @@ import type {
 import { db } from "./database";
 import { SEED_EXERCISES } from "./seed";
 
+export interface ExerciseNoteHistoryEntry {
+  note: string;
+  startedAt: number;
+}
+
 export interface WorkoutRepository {
   // Workouts
   saveWorkout(workout: Workout): Promise<void>;
@@ -23,10 +28,15 @@ export interface WorkoutRepository {
 
   // Frequency
   getFrequentExercises(limit: number): Promise<Exercise[]>;
+  getLastPerformedDates(): Promise<Record<ID, number>>;
 
   // Goal lookup
   getLastActuals(exerciseId: ID): Promise<ExerciseSet[] | undefined>;
   getNextSessionTargets(exerciseId: ID): Promise<SetGoal[] | undefined>;
+  getRecentExerciseNotes(
+    exerciseId: ID,
+    limit: number,
+  ): Promise<ExerciseNoteHistoryEntry[]>;
 }
 
 class DexieWorkoutRepository implements WorkoutRepository {
@@ -115,6 +125,29 @@ class DexieWorkoutRepository implements WorkoutRepository {
     return exercises.filter((e): e is Exercise => e !== undefined);
   }
 
+  async getLastPerformedDates(): Promise<Record<ID, number>> {
+    const workouts = await db.workouts
+      .where("status")
+      .equals("completed")
+      .reverse()
+      .sortBy("startedAt");
+
+    const dates: Record<ID, number> = {};
+
+    for (const workout of workouts) {
+      for (const block of workout.blocks) {
+        if (block.status !== "finished") continue;
+
+        for (const exercise of block.exercises) {
+          if (dates[exercise.exerciseId] != null) continue;
+          dates[exercise.exerciseId] = workout.startedAt;
+        }
+      }
+    }
+
+    return dates;
+  }
+
   async getLastActuals(exerciseId: ID): Promise<ExerciseSet[] | undefined> {
     const workouts = await db.workouts
       .where("status")
@@ -153,6 +186,41 @@ class DexieWorkoutRepository implements WorkoutRepository {
       }
     }
     return undefined;
+  }
+
+  async getRecentExerciseNotes(
+    exerciseId: ID,
+    limit: number,
+  ): Promise<ExerciseNoteHistoryEntry[]> {
+    const workouts = await db.workouts
+      .where("status")
+      .equals("completed")
+      .reverse()
+      .sortBy("startedAt");
+
+    const entries: ExerciseNoteHistoryEntry[] = [];
+
+    for (const workout of workouts) {
+      for (const block of workout.blocks) {
+        if (block.status !== "finished") continue;
+
+        for (const exercise of block.exercises) {
+          if (exercise.exerciseId !== exerciseId) continue;
+          if (!exercise.notes.trim()) continue;
+
+          entries.push({
+            note: exercise.notes.trim(),
+            startedAt: workout.startedAt,
+          });
+
+          if (entries.length >= limit) {
+            return entries;
+          }
+        }
+      }
+    }
+
+    return entries;
   }
 }
 

@@ -1,7 +1,13 @@
+import { useEffect, useState } from "react";
 import { RestTimer } from "@/components/workout/RestTimer";
 import { TabBar } from "@/components/ui/TabBar";
 import { Button } from "@/components/ui/Button";
 import { useWorkoutStore } from "@/stores/workoutStore";
+import {
+  repository,
+  type ExerciseNoteHistoryEntry,
+} from "@/db/repository";
+import { formatDateTime } from "@/lib/utils";
 
 export function BlockInProgressView() {
   const workout = useWorkoutStore((s) => s.workout);
@@ -16,34 +22,59 @@ export function BlockInProgressView() {
   );
   const finishBlock = useWorkoutStore((s) => s.finishBlock);
   const updateExerciseNotes = useWorkoutStore((s) => s.updateExerciseNotes);
+  const [recentNotes, setRecentNotes] = useState<ExerciseNoteHistoryEntry[]>([]);
 
   const setTabIndex = (index: number) =>
     useWorkoutStore.setState({ activeExerciseTabIndex: index });
 
-  if (!workout) return null;
-  const block = workout.blocks[activeBlockIndex];
-  if (!block) return null;
+  const block = workout?.blocks[activeBlockIndex];
+  const exerciseNames = block?.exercises.map((e) => e.exerciseName) ?? [];
+  const activeExercise = block?.exercises[activeExerciseTabIndex];
+  const hasRestTimer =
+    block?.restTimerSeconds != null && block.restTimerSeconds > 0;
 
-  const exerciseNames = block.exercises.map((e) => e.exerciseName);
-  const activeExercise = block.exercises[activeExerciseTabIndex];
+  useEffect(() => {
+    if (!activeExercise?.exerciseId) {
+      setRecentNotes([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    void repository
+      .getRecentExerciseNotes(activeExercise.exerciseId, 2)
+      .then((entries) => {
+        if (!cancelled) {
+          setRecentNotes(entries);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeExercise?.exerciseId]);
+
+  if (!workout || !block) return null;
 
   return (
-    <div className="flex flex-col gap-4 flex-1">
-      {/* Rest Timer */}
-      {block.restTimerSeconds != null && block.restTimerSeconds > 0 && (
-        <RestTimer durationSeconds={block.restTimerSeconds} />
-      )}
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-3 bg-surface/95 px-4 pb-3 backdrop-blur-sm">
+        {/* Rest Timer */}
+        {hasRestTimer && (
+          <RestTimer durationSeconds={block.restTimerSeconds ?? 0} />
+        )}
 
-      {/* Exercise Tabs (for supersets) */}
-      <TabBar
-        tabs={exerciseNames}
-        activeIndex={activeExerciseTabIndex}
-        onTabChange={setTabIndex}
-      />
+        {/* Exercise Tabs (for supersets) */}
+        <TabBar
+          tabs={exerciseNames}
+          activeIndex={activeExerciseTabIndex}
+          onTabChange={setTabIndex}
+        />
+      </div>
 
       {/* Active Exercise */}
       {activeExercise && (
-        <div className="flex flex-col gap-3 flex-1">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-6">
           <h2 className="text-lg font-bold text-text-primary">
             {activeExercise.exerciseName}
           </h2>
@@ -189,10 +220,31 @@ export function BlockInProgressView() {
               className="w-full bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent resize-none"
             />
           </div>
+
+          {recentNotes.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                Recent Notes
+              </p>
+              {recentNotes.map((entry, index) => (
+                <div
+                  key={`${entry.startedAt}-${index}`}
+                  className="rounded-xl border border-border bg-surface-raised/70 p-3"
+                >
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted">
+                    {formatDateTime(entry.startedAt)}
+                  </p>
+                  <p className="mt-2 text-sm text-text-secondary">
+                    {entry.note}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      <div className="mt-auto pb-6">
+      <div className="pb-6">
         <Button fullWidth variant="secondary" onClick={finishBlock}>
           Finish Block
         </Button>

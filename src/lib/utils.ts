@@ -12,6 +12,23 @@ export function formatDate(timestamp: number): string {
   }).format(new Date(timestamp));
 }
 
+export function formatMonthDay(timestamp: number): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(timestamp));
+}
+
+export function formatDateTime(timestamp: number): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(timestamp));
+}
+
 export function formatDuration(startMs: number, endMs: number): string {
   const totalMinutes = Math.round((endMs - startMs) / 60_000);
   if (totalMinutes < 60) {

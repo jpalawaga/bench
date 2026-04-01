@@ -3,19 +3,23 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { useExercises } from "@/hooks/useExercises";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { repository } from "@/db/repository";
-import { generateId } from "@/lib/utils";
-import type { Exercise } from "@/types/models";
+import { formatMonthDay, generateId } from "@/lib/utils";
+import type { Exercise, ID } from "@/types/models";
 
 export function ExerciseSelectView() {
   const [query, setQuery] = useState("");
   const [creatingCustom, setCreatingCustom] = useState(false);
   const [customName, setCustomName] = useState("");
   const [frequentExercises, setFrequentExercises] = useState<Exercise[]>([]);
+  const [lastPerformedDates, setLastPerformedDates] = useState<
+    Record<ID, number>
+  >({});
   const { exercises, loading } = useExercises(query);
   const setPendingExercise = useWorkoutStore((s) => s.setPendingExercise);
 
   useEffect(() => {
     repository.getFrequentExercises(8).then(setFrequentExercises);
+    repository.getLastPerformedDates().then(setLastPerformedDates);
   }, []);
 
   const handleSelect = (id: string, name: string) => {
@@ -65,6 +69,7 @@ export function ExerciseSelectView() {
                   <ExerciseRow
                     key={ex.id}
                     exercise={ex}
+                    lastPerformedAt={lastPerformedDates[ex.id]}
                     onSelect={handleSelect}
                   />
                 ))}
@@ -80,6 +85,7 @@ export function ExerciseSelectView() {
               <ExerciseRow
                 key={ex.id}
                 exercise={ex}
+                lastPerformedAt={lastPerformedDates[ex.id]}
                 onSelect={handleSelect}
               />
             ))}
@@ -124,9 +130,11 @@ export function ExerciseSelectView() {
 
 function ExerciseRow({
   exercise,
+  lastPerformedAt,
   onSelect,
 }: {
   exercise: Exercise;
+  lastPerformedAt?: number;
   onSelect: (id: string, name: string) => void;
 }) {
   return (
@@ -134,12 +142,22 @@ function ExerciseRow({
       onClick={() => onSelect(exercise.id, exercise.name)}
       className="w-full text-left px-4 py-3 rounded-lg active:bg-surface-overlay transition-colors"
     >
-      <span className="text-text-primary">{exercise.name}</span>
-      {exercise.muscleGroup && (
-        <span className="text-text-muted text-sm ml-2">
-          {exercise.muscleGroup}
-        </span>
-      )}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className="text-text-primary">{exercise.name}</span>
+          {exercise.muscleGroup && (
+            <span className="ml-2 text-sm text-text-muted">
+              {exercise.muscleGroup}
+            </span>
+          )}
+        </div>
+
+        {lastPerformedAt != null && (
+          <span className="shrink-0 pt-0.5 text-xs text-text-muted/80">
+            {formatMonthDay(lastPerformedAt)}
+          </span>
+        )}
+      </div>
     </button>
   );
 }
