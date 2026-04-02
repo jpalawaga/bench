@@ -26,6 +26,7 @@ export function WorkoutPage() {
   const currentView = useWorkoutStore((s) => s.currentView);
   const activeBlockIndex = useWorkoutStore((s) => s.activeBlockIndex);
   const loadWorkout = useWorkoutStore((s) => s.loadWorkout);
+  const removeBlock = useWorkoutStore((s) => s.removeBlock);
   const setView = useWorkoutStore((s) => s.setView);
   const workout = useWorkoutStore((s) => s.workout);
   const reset = useWorkoutStore((s) => s.reset);
@@ -60,7 +61,14 @@ export function WorkoutPage() {
         navigate("/");
         break;
       case "new-block":
-        setView("block-list");
+        if (
+          activeBlock?.status === "planning" &&
+          activeBlock.exercises.length === 0
+        ) {
+          removeBlock(activeBlockIndex);
+        } else {
+          setView("block-list");
+        }
         break;
       case "exercise-select":
         setView("new-block");
@@ -110,11 +118,11 @@ export function WorkoutPage() {
 
   return (
     <div className="min-h-dvh flex flex-col px-4 pt-safe-top pb-safe-bottom">
-      <header className="py-4 flex items-center gap-3">
+      <header className="grid min-h-14 grid-cols-[2rem_1fr] items-center gap-3 py-4">
         {canGoBack && (
           <button
             onClick={handleBack}
-            className="text-text-secondary active:text-text-primary p-1 -ml-1 min-h-0"
+            className="flex h-8 w-8 items-center justify-center text-text-secondary active:text-text-primary min-h-0"
           >
             <svg
               width="24"
@@ -130,7 +138,10 @@ export function WorkoutPage() {
             </svg>
           </button>
         )}
-        <h1 className="text-xl font-bold text-text-primary">
+        {!canGoBack && (
+          <div aria-hidden="true" className="h-8 w-8" />
+        )}
+        <h1 className="truncate text-xl leading-none font-bold text-text-primary">
           {VIEW_TITLES[currentView] ?? "Workout"}
         </h1>
       </header>

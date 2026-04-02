@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { BlockCard } from "@/components/workout/BlockCard";
 import { useWorkoutStore } from "@/stores/workoutStore";
 
 export function BlockListView() {
   const workout = useWorkoutStore((s) => s.workout);
   const addBlock = useWorkoutStore((s) => s.addBlock);
+  const removeBlock = useWorkoutStore((s) => s.removeBlock);
   const setActiveBlock = useWorkoutStore((s) => s.setActiveBlock);
   const setView = useWorkoutStore((s) => s.setView);
   const finishWorkout = useWorkoutStore((s) => s.finishWorkout);
+  const [deleteBlockIndex, setDeleteBlockIndex] = useState<number | null>(null);
 
   if (!workout) return null;
 
@@ -24,6 +28,9 @@ export function BlockListView() {
       setView("block-in-progress");
     }
   };
+
+  const deleteTarget =
+    deleteBlockIndex != null ? workout.blocks[deleteBlockIndex] : null;
 
   return (
     <div className="flex flex-col gap-4 flex-1">
@@ -42,6 +49,11 @@ export function BlockListView() {
               key={block.id}
               block={block}
               onClick={() => handleBlockClick(i)}
+              onLongPress={
+                block.status === "in-progress"
+                  ? undefined
+                  : () => setDeleteBlockIndex(i)
+              }
             />
           ))}
         </div>
@@ -57,6 +69,21 @@ export function BlockListView() {
           Finish Workout
         </Button>
       </div>
+
+      <Modal
+        open={deleteTarget !== null}
+        title="Delete Block"
+        message={`Remove Block ${deleteTarget?.order ?? ""} from this workout?`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (deleteBlockIndex != null) {
+            removeBlock(deleteBlockIndex);
+          }
+          setDeleteBlockIndex(null);
+        }}
+        onCancel={() => setDeleteBlockIndex(null)}
+      />
     </div>
   );
 }

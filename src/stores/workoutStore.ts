@@ -23,6 +23,7 @@ interface WorkoutState {
   loadWorkout: (workout: Workout) => void;
   setView: (view: WorkoutView) => void;
   addBlock: () => void;
+  removeBlock: (index: number) => void;
   setActiveBlock: (index: number) => void;
   addExerciseToBlock: (exercise: BlockExercise) => void;
   setRestTimer: (seconds: number | null) => void;
@@ -79,6 +80,32 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       workout: updated,
       activeBlockIndex: updated.blocks.length - 1,
       currentView: "new-block",
+    });
+    get().persist();
+  },
+
+  removeBlock: (index) => {
+    const { workout, activeBlockIndex } = get();
+    if (!workout) return;
+
+    const blocks = workout.blocks
+      .filter((_, i) => i !== index)
+      .map((block, i) => ({
+        ...block,
+        order: i + 1,
+      }));
+
+    const nextActiveBlockIndex =
+      blocks.length === 0
+        ? 0
+        : index < activeBlockIndex
+          ? activeBlockIndex - 1
+          : Math.min(activeBlockIndex, blocks.length - 1);
+
+    set({
+      workout: { ...workout, blocks },
+      activeBlockIndex: nextActiveBlockIndex,
+      currentView: "block-list",
     });
     get().persist();
   },

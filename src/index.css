@@ -13,6 +13,11 @@
   --color-text-muted: #737373;
   --color-border: #404040;
   --color-proposed: #3b82f6;
+  --color-button-primary-bg: #162030;
+  --color-button-primary-border: #31366f;
+  --color-button-primary-text: #17d2ff;
+  --color-button-primary-bg-active: #1b2940;
+  --color-button-primary-text-active: #5fe4ff;
 }
 
 html {

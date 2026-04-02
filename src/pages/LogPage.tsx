@@ -38,11 +38,22 @@ export function LogPage() {
   // Show workout detail view
   if (selectedWorkout) {
     return (
-      <WorkoutDetail
-        workout={selectedWorkout}
-        onClose={() => setSelectedWorkout(null)}
-        onDelete={() => setDeleteTarget(selectedWorkout)}
-      />
+      <>
+        <WorkoutDetail
+          workout={selectedWorkout}
+          onClose={() => setSelectedWorkout(null)}
+          onDelete={() => setDeleteTarget(selectedWorkout)}
+        />
+        <Modal
+          open={deleteTarget !== null}
+          title="Delete Workout"
+          message="Are you sure you want to delete this workout? This cannot be undone."
+          confirmLabel="Delete"
+          confirmVariant="danger"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      </>
     );
   }
 
