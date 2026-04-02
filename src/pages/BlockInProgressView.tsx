@@ -217,7 +217,7 @@ export function BlockInProgressView() {
               }
               placeholder="Notes (optional)"
               rows={2}
-              className="w-full bg-surface-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent resize-none"
+              className="w-full rounded-lg bg-surface-overlay/55 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:bg-surface-overlay/75 resize-none"
             />
           </div>
 

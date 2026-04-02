@@ -18,6 +18,11 @@
   --color-button-primary-text: #17d2ff;
   --color-button-primary-bg-active: #1b2940;
   --color-button-primary-text-active: #5fe4ff;
+  --color-button-success-bg: #13261b;
+  --color-button-success-border: #29563a;
+  --color-button-success-text: #57e389;
+  --color-button-success-bg-active: #183223;
+  --color-button-success-text-active: #7ff0a7;
 }
 
 html {

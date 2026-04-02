@@ -12,6 +12,7 @@ export function RestTimer({ durationSeconds }: RestTimerProps) {
   const { timeRemaining, isRunning, isExpired, start, reset } =
     useTimer(durationSeconds);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const hasPrimedAudioRef = useRef(false);
 
   const getAudioContext = () => {
     if (typeof window === "undefined") return null;
@@ -62,10 +63,46 @@ export function RestTimer({ durationSeconds }: RestTimerProps) {
     }
   };
 
+  const primeAudio = async () => {
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
+
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    if (hasPrimedAudioRef.current) return;
+
+    // iOS Safari often requires one user-gesture-driven playback to unlock
+    // future Web Audio sounds. A near-silent buffer is enough.
+    const buffer = audioContext.createBuffer(1, 1, audioContext.sampleRate);
+    const source = audioContext.createBufferSource();
+    const gain = audioContext.createGain();
+
+    gain.gain.value = 0.0001;
+    source.buffer = buffer;
+    source.connect(gain);
+    gain.connect(audioContext.destination);
+    source.start();
+
+    hasPrimedAudioRef.current = true;
+  };
+
+  const playAlertIfPossible = async () => {
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
+
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    playAlert();
+  };
+
   // Play alert on expiry
   useEffect(() => {
     if (isExpired) {
-      playAlert();
+      void playAlertIfPossible();
     }
   }, [isExpired]);
 
@@ -80,13 +117,18 @@ export function RestTimer({ durationSeconds }: RestTimerProps) {
     if (isExpired) {
       reset();
     } else if (!isRunning) {
-      void getAudioContext()?.resume();
+      void primeAudio();
       start();
     }
   };
 
   return (
     <button
+      onPointerDown={() => {
+        if (!isRunning) {
+          void primeAudio();
+        }
+      }}
       onClick={handleTap}
       className={`
         w-full rounded-2xl py-8 flex flex-col items-center justify-center

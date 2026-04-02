@@ -41,7 +41,12 @@ export function NewBlockView() {
           onChange={setRestTimer}
         />
 
-        <Button fullWidth disabled={!hasExercises} onClick={startBlock}>
+        <Button
+          fullWidth
+          variant="success"
+          disabled={!hasExercises}
+          onClick={startBlock}
+        >
           Start Block
         </Button>
       </div>
