@@ -23,6 +23,7 @@ export function BlockInProgressView() {
   const finishBlock = useWorkoutStore((s) => s.finishBlock);
   const updateExerciseNotes = useWorkoutStore((s) => s.updateExerciseNotes);
   const [recentNotes, setRecentNotes] = useState<ExerciseNoteHistoryEntry[]>([]);
+  const [timerStartSignal, setTimerStartSignal] = useState(0);
 
   const setTabIndex = (index: number) =>
     useWorkoutStore.setState({ activeExerciseTabIndex: index });
@@ -61,7 +62,10 @@ export function BlockInProgressView() {
       <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-3 bg-surface/95 px-4 pb-3 backdrop-blur-sm">
         {/* Rest Timer */}
         {hasRestTimer && (
-          <RestTimer durationSeconds={block.restTimerSeconds ?? 0} />
+          <RestTimer
+            durationSeconds={block.restTimerSeconds ?? 0}
+            autoStartSignal={timerStartSignal}
+          />
         )}
 
         {/* Exercise Tabs (for supersets) */}
@@ -98,14 +102,17 @@ export function BlockInProgressView() {
                 <div key={set.id} className="flex items-center gap-2">
                   {/* Quick-fill check: copies goal into actuals */}
                   <button
-                    onClick={() =>
+                    onClick={() => {
                       recordActual(
                         activeExerciseTabIndex,
                         si,
                         set.goal.reps,
                         set.goal.weight,
-                      )
-                    }
+                      );
+                      if (hasRestTimer) {
+                        setTimerStartSignal((prev) => prev + 1);
+                      }
+                    }}
                     className={`
                       p-1 min-h-0 shrink-0 rounded-full transition-colors
                       ${isFilled ? "text-green-400" : "text-text-muted active:text-green-400"}

@@ -4,15 +4,20 @@ import { formatTimerDisplay } from "@/lib/utils";
 
 interface RestTimerProps {
   durationSeconds: number;
+  autoStartSignal?: number;
 }
 
 type AudioContextCtor = typeof AudioContext;
 
-export function RestTimer({ durationSeconds }: RestTimerProps) {
+export function RestTimer({
+  durationSeconds,
+  autoStartSignal = 0,
+}: RestTimerProps) {
   const { timeRemaining, isRunning, isExpired, start, reset } =
     useTimer(durationSeconds);
   const audioContextRef = useRef<AudioContext | null>(null);
   const hasPrimedAudioRef = useRef(false);
+  const lastAutoStartSignalRef = useRef(autoStartSignal);
 
   const getAudioContext = () => {
     if (typeof window === "undefined") return null;
@@ -105,6 +110,16 @@ export function RestTimer({ durationSeconds }: RestTimerProps) {
       void playAlertIfPossible();
     }
   }, [isExpired]);
+
+  useEffect(() => {
+    if (autoStartSignal === lastAutoStartSignalRef.current) return;
+    lastAutoStartSignalRef.current = autoStartSignal;
+
+    if (isRunning || isExpired) return;
+
+    void primeAudio();
+    start();
+  }, [autoStartSignal, isExpired, isRunning, start]);
 
   useEffect(() => {
     return () => {
