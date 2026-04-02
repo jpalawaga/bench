@@ -19,7 +19,7 @@ export function WorkoutDetail({
       : "In progress";
 
   return (
-    <div className="min-h-dvh flex flex-col px-4 pb-safe-bottom">
+    <div className="min-h-dvh flex flex-col px-4 pt-safe-top pb-safe-bottom">
       <header className="py-4 flex items-center gap-3">
         <button
           onClick={onClose}
