@@ -61,7 +61,6 @@ export function BlockInProgressView() {
   const block = workout?.blocks[activeBlockIndex];
   const exerciseNames = block?.exercises.map((e) => e.exerciseName) ?? [];
   const activeExercise = block?.exercises[activeExerciseTabIndex];
-  const hasRestTimer = (block?.restTimerSeconds ?? 0) > 0;
   const hasExerciseNotes = Boolean(activeExercise?.notes.trim());
   const hasSeenNotes = activeExercise
     ? Boolean(seenNotesByExerciseId[activeExercise.exerciseId])
@@ -96,12 +95,6 @@ export function BlockInProgressView() {
   useEffect(() => {
     setNotesMode("hidden");
   }, [activeExercise?.exerciseId]);
-
-  useEffect(() => {
-    if (hasRestTimer) {
-      setShowTimerConfigurator(false);
-    }
-  }, [hasRestTimer]);
 
   useEffect(() => {
     const previousIndex = previousExerciseTabIndexRef.current;
