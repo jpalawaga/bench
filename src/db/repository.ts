@@ -13,6 +13,17 @@ export interface ExerciseNoteHistoryEntry {
   startedAt: number;
 }
 
+export interface ExerciseHistoryEntry {
+  workoutId: ID;
+  startedAt: number;
+  completedAt: number | null;
+  exerciseName: string;
+  notes: string;
+  performedSets: ExerciseSet[];
+  isSuperset: boolean;
+  supersetPartners: string[];
+}
+
 export interface WorkoutRepository {
   // Workouts
   saveWorkout(workout: Workout): Promise<void>;
@@ -23,8 +34,11 @@ export interface WorkoutRepository {
 
   // Exercises
   getAllExercises(): Promise<Exercise[]>;
+  getExercise(id: ID): Promise<Exercise | undefined>;
   searchExercises(query: string): Promise<Exercise[]>;
   addExercise(exercise: Exercise): Promise<void>;
+  updateExercise(exercise: Exercise): Promise<void>;
+  deleteExercise(id: ID): Promise<void>;
 
   // Frequency
   getFrequentExercises(limit: number): Promise<Exercise[]>;
@@ -37,6 +51,7 @@ export interface WorkoutRepository {
     exerciseId: ID,
     limit: number,
   ): Promise<ExerciseNoteHistoryEntry[]>;
+  getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]>;
 }
 
 class DexieWorkoutRepository implements WorkoutRepository {
@@ -76,6 +91,11 @@ class DexieWorkoutRepository implements WorkoutRepository {
     return db.exercises.orderBy("name").toArray();
   }
 
+  async getExercise(id: ID): Promise<Exercise | undefined> {
+    await this.ensureSeeded();
+    return db.exercises.get(id);
+  }
+
   async searchExercises(query: string): Promise<Exercise[]> {
     await this.ensureSeeded();
     if (!query.trim()) {
@@ -89,6 +109,14 @@ class DexieWorkoutRepository implements WorkoutRepository {
 
   async addExercise(exercise: Exercise): Promise<void> {
     await db.exercises.add(exercise);
+  }
+
+  async updateExercise(exercise: Exercise): Promise<void> {
+    await db.exercises.put(exercise);
+  }
+
+  async deleteExercise(id: ID): Promise<void> {
+    await db.exercises.delete(id);
   }
 
   async getFrequentExercises(limit: number): Promise<Exercise[]> {
@@ -216,6 +244,41 @@ class DexieWorkoutRepository implements WorkoutRepository {
           if (entries.length >= limit) {
             return entries;
           }
+        }
+      }
+    }
+
+    return entries;
+  }
+
+  async getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]> {
+    const workouts = await db.workouts
+      .where("status")
+      .equals("completed")
+      .reverse()
+      .sortBy("startedAt");
+
+    const entries: ExerciseHistoryEntry[] = [];
+
+    for (const workout of workouts) {
+      for (const block of workout.blocks) {
+        if (block.status !== "finished") continue;
+
+        for (const exercise of block.exercises) {
+          if (exercise.exerciseId !== exerciseId) continue;
+
+          entries.push({
+            workoutId: workout.id,
+            startedAt: workout.startedAt,
+            completedAt: workout.completedAt,
+            exerciseName: exercise.exerciseName,
+            notes: exercise.notes.trim(),
+            performedSets: exercise.sets,
+            isSuperset: block.exercises.length > 1,
+            supersetPartners: block.exercises
+              .filter((blockExercise) => blockExercise.exerciseId !== exerciseId)
+              .map((blockExercise) => blockExercise.exerciseName),
+          });
         }
       }
     }

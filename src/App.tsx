@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { HashRouter, Routes, Route, useNavigate } from "react-router";
 import { LogPage } from "@/pages/LogPage";
 import { WorkoutPage } from "@/pages/WorkoutPage";
+import { ExerciseLibraryPage } from "@/pages/ExerciseLibraryPage";
+import { ExerciseDetailPage } from "@/pages/ExerciseDetailPage";
 import { repository } from "@/db/repository";
 import { useWorkoutStore } from "@/stores/workoutStore";
 
@@ -50,6 +52,8 @@ export function App() {
       <Routes>
         <Route path="/" element={<LogPage />} />
         <Route path="/workout/:workoutId" element={<WorkoutPage />} />
+        <Route path="/exercises" element={<ExerciseLibraryPage />} />
+        <Route path="/exercises/:exerciseId" element={<ExerciseDetailPage />} />
       </Routes>
     </HashRouter>
   );

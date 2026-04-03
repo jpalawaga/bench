@@ -59,8 +59,15 @@ export function LogPage() {
 
   return (
     <div className="min-h-dvh flex flex-col px-4 pt-safe-top pb-safe-bottom">
-      <header className="py-6">
+      <header className="flex items-center justify-between gap-4 py-6">
         <h1 className="text-2xl font-bold text-text-primary">Benchpress</h1>
+        <button
+          onClick={() => navigate("/exercises")}
+          className="flex h-10 w-10 min-h-0 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors active:bg-surface-overlay active:text-text-primary"
+          aria-label="Edit exercise library"
+        >
+          <span className="text-lg leading-none">💪</span>
+        </button>
       </header>
 
       <Button fullWidth onClick={startWorkout}>
