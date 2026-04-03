@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { WorkoutNumberInput } from "@/components/workout/WorkoutNumberInput";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import {
   getSetAmount,
@@ -66,6 +67,15 @@ interface NextSessionPromptProps {
   onSave: (targets: SetGoal[]) => void;
 }
 
+function getEditableTargets(targets: SetGoal[]): SetGoal[] {
+  return groupConsecutiveSetGoals(targets).map((target) => ({
+    ...target,
+    amount: getSetAmount(target),
+    isProposed: false,
+    proposalSource: undefined,
+  }));
+}
+
 function NextSessionPrompt({
   exerciseName,
   savedTargets,
@@ -73,10 +83,19 @@ function NextSessionPrompt({
   onSave,
 }: NextSessionPromptProps) {
   const [expanded, setExpanded] = useState(false);
-  const [targets, setTargets] = useState<SetGoal[]>(
-    groupConsecutiveSetGoals(savedTargets ?? currentSets),
+  const [targets, setTargets] = useState<SetGoal[]>(() =>
+    getEditableTargets(currentSets),
   );
   const hasSavedTargets = Boolean(savedTargets?.length);
+
+  useEffect(() => {
+    if (hasSavedTargets && savedTargets) {
+      setTargets(getEditableTargets(savedTargets));
+      return;
+    }
+
+    setTargets(getEditableTargets(currentSets));
+  }, [currentSets, hasSavedTargets, savedTargets]);
 
   const updateTarget = (
     index: number,
@@ -154,31 +173,21 @@ function NextSessionPrompt({
         {targets.map((t, i) => (
           <div key={i} className="flex items-center gap-2">
             <span className="text-text-muted text-sm w-8">S{i + 1}</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={t.reps || ""}
-              onChange={(e) =>
-                updateTarget(i, "reps", Number(e.target.value) || 0)
-              }
+            <WorkoutNumberInput
+              value={t.reps || null}
+              onChange={(value) => updateTarget(i, "reps", value ?? 0)}
               placeholder="Reps"
-              className="w-16 bg-surface-overlay border border-border rounded-lg px-2 py-2 text-center text-sm text-text-primary focus:outline-none focus:border-accent"
+              min={0}
+              className="h-9 w-16 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
             />
             <span className="text-text-muted text-xs">x</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={t.weight || ""}
-              onChange={(e) =>
-                updateTarget(i, "weight", Number(e.target.value) || 0)
-              }
+            <WorkoutNumberInput
+              value={t.weight || null}
+              onChange={(value) => updateTarget(i, "weight", value ?? 0)}
               placeholder="lbs"
-              className="w-20 bg-surface-overlay border border-border rounded-lg px-2 py-2 text-center text-sm text-text-primary focus:outline-none focus:border-accent"
+              className="h-9 w-20 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
             />
             <span className="text-text-muted text-xs">lbs</span>
-            <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
-              Amt
-            </span>
             <select
               value={getSetAmount(t)}
               onChange={(e) =>
@@ -193,7 +202,7 @@ function NextSessionPrompt({
                   ),
                 )
               }
-              className="w-18 rounded-lg border border-border bg-surface-overlay px-2 py-2 text-center text-sm text-text-primary focus:outline-none focus:border-accent"
+              className="h-9 w-18 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
             >
               {Array.from({ length: 8 }, (_, index) => index + 1).map((amount) => (
                 <option key={amount} value={amount}>

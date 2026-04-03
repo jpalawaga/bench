@@ -46,6 +46,10 @@ export function formatTimerDisplay(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
+export function selectInputValue(input: HTMLInputElement): void {
+  input.select();
+}
+
 export function getSetAmount(goal: Pick<SetGoal, "amount">): number {
   return Math.max(1, goal.amount ?? 1);
 }
@@ -161,22 +165,7 @@ export function formatWorkoutForClipboard(workout: Workout): string {
         })),
       );
 
-      const nextTargets =
-        exercise.nextSessionTargets && exercise.nextSessionTargets.length > 0
-          ? formatSetSequence(
-              groupConsecutiveSetGoals(exercise.nextSessionTargets).flatMap(
-                (target) =>
-                  Array.from({ length: getSetAmount(target) }, () => ({
-                    reps: target.reps,
-                    weight: target.weight,
-                  })),
-              ),
-            )
-          : null;
-
-      lines.push(
-        `${prefix}${exercise.exerciseName}: ${performed}${nextTargets ? ` next: ${nextTargets}` : ""}`,
-      );
+      lines.push(`${prefix}${exercise.exerciseName}: ${performed}`);
     }
   }
 

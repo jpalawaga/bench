@@ -9,6 +9,21 @@ interface RestTimerProps {
 }
 
 type AudioContextCtor = typeof AudioContext;
+type AudioSessionType =
+  | "auto"
+  | "playback"
+  | "transient"
+  | "transient-solo"
+  | "ambient"
+  | "play-and-record";
+
+interface AudioSessionLike {
+  type: AudioSessionType;
+}
+
+interface NavigatorWithAudioSession extends Navigator {
+  audioSession?: AudioSessionLike;
+}
 
 export function RestTimer({
   durationSeconds,
@@ -20,9 +35,36 @@ export function RestTimer({
   const audioContextRef = useRef<AudioContext | null>(null);
   const hasPrimedAudioRef = useRef(false);
   const lastAutoStartSignalRef = useRef(autoStartSignal);
+  const originalAudioSessionTypeRef = useRef<AudioSessionType | null>(null);
+  const hasAdjustedAudioSessionRef = useRef(false);
+
+  const configureAudioSession = () => {
+    if (typeof navigator === "undefined") return;
+
+    const audioSession = (navigator as NavigatorWithAudioSession).audioSession;
+    if (!audioSession) return;
+
+    if (!hasAdjustedAudioSessionRef.current) {
+      originalAudioSessionTypeRef.current = audioSession.type;
+      hasAdjustedAudioSessionRef.current = true;
+    }
+
+    for (const sessionType of ["transient", "ambient"] as const) {
+      try {
+        if (audioSession.type !== sessionType) {
+          audioSession.type = sessionType;
+        }
+        return;
+      } catch {
+        // Best-effort only. Fall through to the next compatible mode.
+      }
+    }
+  };
 
   const getAudioContext = () => {
     if (typeof window === "undefined") return null;
+
+    configureAudioSession();
 
     const AudioContextClass = (
       window.AudioContext ||
@@ -125,6 +167,24 @@ export function RestTimer({
 
   useEffect(() => {
     return () => {
+      const audioSession = (
+        typeof navigator !== "undefined"
+          ? (navigator as NavigatorWithAudioSession).audioSession
+          : undefined
+      );
+
+      if (
+        audioSession &&
+        hasAdjustedAudioSessionRef.current &&
+        originalAudioSessionTypeRef.current
+      ) {
+        try {
+          audioSession.type = originalAudioSessionTypeRef.current;
+        } catch {
+          // Ignore restore failures on unsupported platforms.
+        }
+      }
+
       void audioContextRef.current?.close();
       audioContextRef.current = null;
     };

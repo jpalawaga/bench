@@ -43,6 +43,79 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+@keyframes exercise-pane-in-forward {
+  from {
+    opacity: 0.94;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes exercise-pane-in-backward {
+  from {
+    opacity: 0.94;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes exercise-pane-out-forward {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0.94;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes exercise-pane-out-backward {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0.94;
+    transform: translateX(20px);
+  }
+}
+
+.animate-exercise-pane-in-forward {
+  animation: exercise-pane-in-forward 220ms ease-out;
+}
+
+.animate-exercise-pane-in-backward {
+  animation: exercise-pane-in-backward 220ms ease-out;
+}
+
+.animate-exercise-pane-out-forward {
+  animation: exercise-pane-out-forward 220ms ease-out;
+}
+
+.animate-exercise-pane-out-backward {
+  animation: exercise-pane-out-backward 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-exercise-pane-in-forward,
+  .animate-exercise-pane-in-backward,
+  .animate-exercise-pane-out-forward,
+  .animate-exercise-pane-out-backward {
+    animation: none;
+  }
+}
+
 /* Large touch targets: minimum 48px per WCAG */
 button,
 a {

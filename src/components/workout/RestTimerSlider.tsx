@@ -7,7 +7,7 @@ const MIN = 0;
 const MAX = 300;
 
 function formatRestLabel(seconds: number | null): string {
-  if (seconds == null || seconds === 0) return "00";
+  if (seconds == null || seconds === 0) return "OFF";
   if (seconds < 60) return `${seconds} sec`;
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -96,10 +96,11 @@ export function RestTimerSlider({ value, onChange }: RestTimerSliderProps) {
   }, [dragging]);
 
   const pct = valueToPercent(seconds);
+  const isOff = value == null || value === 0;
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs font-semibold tracking-[0.22em] text-text-secondary">
+    <div className="mx-auto grid w-full max-w-[26rem] grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] items-center gap-3">
+      <span className="text-right text-xs font-semibold tracking-[0.22em] text-text-secondary">
         REST
       </span>
 
@@ -110,7 +111,7 @@ export function RestTimerSlider({ value, onChange }: RestTimerSliderProps) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className="relative h-10 flex-1 cursor-pointer touch-none select-none"
+        className="relative h-10 cursor-pointer touch-none select-none"
       >
         <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
 
@@ -149,7 +150,13 @@ export function RestTimerSlider({ value, onChange }: RestTimerSliderProps) {
         />
       </div>
 
-      <span className="min-w-12 text-left text-sm font-medium tabular-nums text-text-primary">
+      <span
+        className={`text-left text-[13px] font-medium tabular-nums ${
+          isOff
+            ? "tracking-[0.18em] text-text-muted"
+            : "text-text-primary"
+        }`}
+      >
         {formatRestLabel(value).toUpperCase()}
       </span>
     </div>

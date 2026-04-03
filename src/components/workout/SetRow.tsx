@@ -1,5 +1,6 @@
 import { getSetAmount } from "@/lib/utils";
 import type { ExerciseSet } from "@/types/models";
+import { WorkoutNumberInput } from "./WorkoutNumberInput";
 
 function getProposalLabel(set: ExerciseSet): string | null {
   if (!set.goal.isProposed) return null;
@@ -42,41 +43,31 @@ export function SetRow({
       </span>
 
       <div className="flex flex-1 items-center gap-1">
-        <input
-          type="number"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={set.goal.reps || ""}
-          onChange={(e) => onRepsChange(Number(e.target.value) || 0)}
+        <WorkoutNumberInput
+          value={set.goal.reps || null}
+          onChange={(value) => onRepsChange(value ?? 0)}
           placeholder="Reps"
+          min={0}
           className={`
-            w-16 bg-surface-raised border rounded-lg px-2 py-2 text-center text-base text-text-primary
-            placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors
-            ${set.goal.isProposed ? "border-proposed" : "border-border"}
+            h-9 w-16 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary
+            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
           `}
         />
         <span className="text-text-muted text-sm">x</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={set.goal.weight || ""}
-          onChange={(e) => onWeightChange(Number(e.target.value) || 0)}
+        <WorkoutNumberInput
+          value={set.goal.weight || null}
+          onChange={(value) => onWeightChange(value ?? 0)}
           placeholder="lbs"
           className={`
-            w-20 bg-surface-raised border rounded-lg px-2 py-2 text-center text-base text-text-primary
-            placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors
-            ${set.goal.isProposed ? "border-proposed" : "border-border"}
+            h-9 w-20 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary
+            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
           `}
         />
         <span className="text-text-muted text-sm">lbs</span>
-        <span className="text-xs uppercase tracking-[0.14em] text-text-muted">
-          Amt
-        </span>
         <select
           value={getSetAmount(set.goal)}
           onChange={(e) => onAmountChange(Number(e.target.value))}
-          className="w-18 rounded-lg border border-border bg-surface-raised px-2 py-2 text-center text-sm text-text-primary focus:outline-none focus:border-accent"
+          className="h-9 w-18 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
         >
           {Array.from({ length: 8 }, (_, index) => index + 1).map((amount) => (
             <option key={amount} value={amount}>

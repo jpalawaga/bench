@@ -9,6 +9,9 @@ export function NewBlockView() {
   const setView = useWorkoutStore((s) => s.setView);
   const setRestTimer = useWorkoutStore((s) => s.setRestTimer);
   const startBlock = useWorkoutStore((s) => s.startBlock);
+  const removeExerciseFromBlock = useWorkoutStore(
+    (s) => s.removeExerciseFromBlock,
+  );
 
   if (!workout) return null;
   const block = workout.blocks[activeBlockIndex];
@@ -29,7 +32,12 @@ export function NewBlockView() {
       ) : (
         <div className="flex flex-col gap-3">
           {block.exercises.map((ex) => (
-            <ExerciseCard key={ex.id} exercise={ex} onClick={() => {}} />
+            <ExerciseCard
+              key={ex.id}
+              exercise={ex}
+              onClick={() => {}}
+              onRemove={() => removeExerciseFromBlock(ex.id)}
+            />
           ))}
         </div>
       )}
