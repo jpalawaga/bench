@@ -5,6 +5,7 @@ import { formatTimerDisplay } from "@/lib/utils";
 interface RestTimerProps {
   durationSeconds: number;
   autoStartSignal?: number;
+  onConfigureRequested?: () => void;
 }
 
 type AudioContextCtor = typeof AudioContext;
@@ -12,6 +13,7 @@ type AudioContextCtor = typeof AudioContext;
 export function RestTimer({
   durationSeconds,
   autoStartSignal = 0,
+  onConfigureRequested,
 }: RestTimerProps) {
   const { timeRemaining, isRunning, isExpired, start, reset } =
     useTimer(durationSeconds);
@@ -115,11 +117,11 @@ export function RestTimer({
     if (autoStartSignal === lastAutoStartSignalRef.current) return;
     lastAutoStartSignalRef.current = autoStartSignal;
 
-    if (isRunning || isExpired) return;
+    if (durationSeconds <= 0) return;
 
     void primeAudio();
     start();
-  }, [autoStartSignal, isExpired, isRunning, start]);
+  }, [autoStartSignal, durationSeconds, start]);
 
   useEffect(() => {
     return () => {
@@ -129,7 +131,9 @@ export function RestTimer({
   }, []);
 
   const handleTap = () => {
-    if (isExpired) {
+    if (durationSeconds <= 0) {
+      onConfigureRequested?.();
+    } else if (isExpired) {
       reset();
     } else if (!isRunning) {
       void primeAudio();
@@ -163,7 +167,9 @@ export function RestTimer({
         {formatTimerDisplay(timeRemaining)}
       </span>
       <span className="text-text-muted text-sm mt-2">
-        {isExpired
+        {durationSeconds <= 0
+          ? "Tap to set rest timer"
+          : isExpired
           ? "Time's up! Tap to reset"
           : isRunning
             ? "Resting..."

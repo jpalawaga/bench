@@ -1,5 +1,10 @@
+import { useState } from "react";
 import type { Workout } from "@/types/models";
-import { formatDate, formatDuration } from "@/lib/utils";
+import {
+  formatDate,
+  formatDuration,
+  formatWorkoutForClipboard,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 
 interface WorkoutDetailProps {
@@ -13,10 +18,22 @@ export function WorkoutDetail({
   onDelete,
   onClose,
 }: WorkoutDetailProps) {
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
   const duration =
     workout.completedAt != null
       ? formatDuration(workout.startedAt, workout.completedAt)
       : "In progress";
+
+  const handleCopyWorkout = async () => {
+    try {
+      await navigator.clipboard.writeText(formatWorkoutForClipboard(workout));
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+  };
 
   return (
     <div className="min-h-dvh flex flex-col px-4 pt-safe-top pb-safe-bottom">
@@ -95,7 +112,16 @@ export function WorkoutDetail({
         )}
       </div>
 
-      <div className="mt-auto py-6">
+      <div className="mt-auto flex flex-col gap-3 py-6">
+        {workout.completedAt != null && (
+          <Button fullWidth onClick={() => void handleCopyWorkout()}>
+            {copyState === "copied"
+              ? "Copied Workout"
+              : copyState === "error"
+                ? "Copy Failed"
+                : "Copy Workout"}
+          </Button>
+        )}
         <Button fullWidth variant="danger" onClick={onDelete}>
           Delete Workout
         </Button>

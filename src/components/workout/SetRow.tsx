@@ -1,3 +1,4 @@
+import { getSetAmount } from "@/lib/utils";
 import type { ExerciseSet } from "@/types/models";
 
 function getProposalLabel(set: ExerciseSet): string | null {
@@ -19,6 +20,7 @@ interface SetRowProps {
   set: ExerciseSet;
   onRepsChange: (reps: number) => void;
   onWeightChange: (weight: number) => void;
+  onAmountChange: (amount: number) => void;
   onRemove: () => void;
   canRemove: boolean;
 }
@@ -27,6 +29,7 @@ export function SetRow({
   set,
   onRepsChange,
   onWeightChange,
+  onAmountChange,
   onRemove,
   canRemove,
 }: SetRowProps) {
@@ -34,11 +37,11 @@ export function SetRow({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-text-muted text-sm w-8 shrink-0">
+      <span className="w-8 shrink-0 text-sm text-text-muted">
         S{set.setNumber}
       </span>
 
-      <div className="flex items-center gap-1 flex-1">
+      <div className="flex flex-1 items-center gap-1">
         <input
           type="number"
           inputMode="numeric"
@@ -67,6 +70,20 @@ export function SetRow({
           `}
         />
         <span className="text-text-muted text-sm">lbs</span>
+        <span className="text-xs uppercase tracking-[0.14em] text-text-muted">
+          Amt
+        </span>
+        <select
+          value={getSetAmount(set.goal)}
+          onChange={(e) => onAmountChange(Number(e.target.value))}
+          className="w-18 rounded-lg border border-border bg-surface-raised px-2 py-2 text-center text-sm text-text-primary focus:outline-none focus:border-accent"
+        >
+          {Array.from({ length: 8 }, (_, index) => index + 1).map((amount) => (
+            <option key={amount} value={amount}>
+              x{amount}
+            </option>
+          ))}
+        </select>
       </div>
 
       {proposalLabel && (

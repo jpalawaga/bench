@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useWorkoutStore } from "@/stores/workoutStore";
+import {
+  getSetAmount,
+  groupConsecutiveSetGoals,
+  groupExerciseSetsToGoals,
+} from "@/lib/utils";
 import type { SetGoal } from "@/types/models";
 
 export function BlockFinishedView() {
@@ -31,11 +36,7 @@ export function BlockFinishedView() {
           key={ex.id}
           exerciseName={ex.exerciseName}
           savedTargets={ex.nextSessionTargets}
-          currentSets={ex.sets.map((s) => ({
-            reps: s.actual.reps ?? s.goal.reps,
-            weight: s.actual.weight ?? s.goal.weight,
-            isProposed: false,
-          }))}
+          currentSets={groupExerciseSetsToGoals(ex.sets)}
           onSave={(targets) => setNextSessionTargets(ei, targets)}
         />
       ))}
@@ -72,7 +73,9 @@ function NextSessionPrompt({
   onSave,
 }: NextSessionPromptProps) {
   const [expanded, setExpanded] = useState(false);
-  const [targets, setTargets] = useState<SetGoal[]>(savedTargets ?? currentSets);
+  const [targets, setTargets] = useState<SetGoal[]>(
+    groupConsecutiveSetGoals(savedTargets ?? currentSets),
+  );
   const hasSavedTargets = Boolean(savedTargets?.length);
 
   const updateTarget = (
@@ -173,6 +176,31 @@ function NextSessionPrompt({
               className="w-20 bg-surface-overlay border border-border rounded-lg px-2 py-2 text-center text-sm text-text-primary focus:outline-none focus:border-accent"
             />
             <span className="text-text-muted text-xs">lbs</span>
+            <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">
+              Amt
+            </span>
+            <select
+              value={getSetAmount(t)}
+              onChange={(e) =>
+                setTargets((prev) =>
+                  prev.map((target, index) =>
+                    index === i
+                      ? {
+                          ...target,
+                          amount: Number(e.target.value),
+                        }
+                      : target,
+                  ),
+                )
+              }
+              className="w-18 rounded-lg border border-border bg-surface-overlay px-2 py-2 text-center text-sm text-text-primary focus:outline-none focus:border-accent"
+            >
+              {Array.from({ length: 8 }, (_, index) => index + 1).map((amount) => (
+                <option key={amount} value={amount}>
+                  x{amount}
+                </option>
+              ))}
+            </select>
           </div>
         ))}
       </div>

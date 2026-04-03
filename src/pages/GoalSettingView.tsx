@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/Button";
 import { SetRow } from "@/components/workout/SetRow";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { repository } from "@/db/repository";
-import { generateId } from "@/lib/utils";
+import {
+  generateId,
+  getSetAmount,
+  groupConsecutiveSetGoals,
+} from "@/lib/utils";
 import type { BlockExercise, ExerciseSet, SetGoal } from "@/types/models";
 
 export function GoalSettingView() {
@@ -22,7 +26,7 @@ export function GoalSettingView() {
       const targets = await repository.getNextSessionTargets(pendingExerciseId);
       if (targets && targets.length > 0) {
         setSets(
-          targets.map((t, i) => ({
+          groupConsecutiveSetGoals(targets).map((t, i) => ({
             id: generateId(),
             setNumber: i + 1,
             goal: { ...t, isProposed: true, proposalSource: "planned" },
@@ -36,15 +40,18 @@ export function GoalSettingView() {
       const lastActuals = await repository.getLastActuals(pendingExerciseId);
       if (lastActuals && lastActuals.length > 0) {
         setSets(
-          lastActuals.map((s, i) => ({
-            id: generateId(),
-            setNumber: i + 1,
-            goal: {
+          groupConsecutiveSetGoals(
+            lastActuals.map((s) => ({
               reps: s.actual.reps ?? s.goal.reps,
               weight: s.actual.weight ?? s.goal.weight,
+              amount: 1,
               isProposed: true,
               proposalSource: "previous",
-            },
+            })),
+          ).map((s, i) => ({
+            id: generateId(),
+            setNumber: i + 1,
+            goal: s,
             actual: { reps: null, weight: null },
           })),
         );
@@ -57,7 +64,7 @@ export function GoalSettingView() {
         {
           id: generateId(),
           setNumber: 1,
-          goal: { reps: 0, weight: 0, isProposed: false },
+          goal: { reps: 0, weight: 0, amount: 1, isProposed: false },
           actual: { reps: null, weight: null },
         },
       ]);
@@ -80,6 +87,25 @@ export function GoalSettingView() {
               goal: {
                 ...s.goal,
                 [field]: value,
+                amount: getSetAmount(s.goal),
+                isProposed: false,
+                proposalSource: undefined,
+              },
+            }
+          : s,
+      ),
+    );
+  };
+
+  const updateSetAmount = (index: number, amount: number) => {
+    setSets((prev) =>
+      prev.map((s, i) =>
+        i === index
+          ? {
+              ...s,
+              goal: {
+                ...s.goal,
+                amount,
                 isProposed: false,
                 proposalSource: undefined,
               },
@@ -99,10 +125,11 @@ export function GoalSettingView() {
         goal: lastSet
           ? {
               ...lastSet.goal,
+              amount: getSetAmount(lastSet.goal),
               isProposed: false,
               proposalSource: undefined,
             }
-          : { reps: 0, weight: 0, isProposed: false },
+          : { reps: 0, weight: 0, amount: 1, isProposed: false },
         actual: { reps: null, weight: null },
       },
     ]);
@@ -118,11 +145,26 @@ export function GoalSettingView() {
 
   const handleLockIn = () => {
     if (!pendingExerciseId || !pendingExerciseName) return;
+    const expandedSets = sets.flatMap((set) =>
+      Array.from({ length: getSetAmount(set.goal) }, (_, amountIndex) => ({
+        id: generateId(),
+        setNumber: amountIndex + 1,
+        goal: {
+          ...set.goal,
+          amount: 1,
+        },
+        actual: { reps: null, weight: null },
+      })),
+    );
+    const renumberedSets = expandedSets.map((set, index) => ({
+      ...set,
+      setNumber: index + 1,
+    }));
     const exercise: BlockExercise = {
       id: generateId(),
       exerciseId: pendingExerciseId,
       exerciseName: pendingExerciseName,
-      sets,
+      sets: renumberedSets,
       notes: "",
     };
     addExerciseToBlock(exercise);
@@ -149,6 +191,7 @@ export function GoalSettingView() {
             set={s}
             onRepsChange={(reps) => updateSetGoal(i, "reps", reps)}
             onWeightChange={(weight) => updateSetGoal(i, "weight", weight)}
+            onAmountChange={(amount) => updateSetAmount(i, amount)}
             onRemove={() => removeSet(i)}
             canRemove={sets.length > 1}
           />

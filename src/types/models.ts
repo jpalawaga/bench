@@ -19,6 +19,7 @@ export interface Exercise {
 export interface SetGoal {
   reps: number;
   weight: number; // lbs
+  amount?: number;
   isProposed: boolean;
   proposalSource?: "planned" | "previous";
 }

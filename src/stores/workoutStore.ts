@@ -190,8 +190,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
           id: generateId(),
           setNumber: ex.sets.length + 1,
           goal: lastSet
-            ? { ...lastSet.goal, isProposed: false }
-            : { reps: 0, weight: 0, isProposed: false },
+            ? { ...lastSet.goal, amount: 1, isProposed: false }
+            : { reps: 0, weight: 0, amount: 1, isProposed: false },
           actual: { reps: null, weight: null },
         };
         return { ...ex, sets: [...ex.sets, newSet] };
@@ -258,6 +258,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       return { ...b, exercises };
     });
     set({ workout: { ...workout, blocks } });
+    get().persist();
   },
 
   finishWorkout: async () => {
