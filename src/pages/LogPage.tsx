@@ -14,6 +14,7 @@ export function LogPage() {
   const navigate = useNavigate();
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Workout | null>(null);
+  const [showBuildLabel, setShowBuildLabel] = useState(false);
 
   const startWorkout = async () => {
     const workout: Workout = {
@@ -59,14 +60,29 @@ export function LogPage() {
 
   return (
     <div className="min-h-dvh flex flex-col px-4 pt-safe-top pb-safe-bottom">
-      <header className="flex items-center justify-between gap-4 py-6">
-        <h1 className="text-2xl font-bold text-text-primary">Benchpress</h1>
+      <header className="flex items-start justify-between gap-4 py-6">
+        <button
+          onClick={() => setShowBuildLabel((prev) => !prev)}
+          className="flex min-h-0 items-start gap-2 text-left"
+          aria-label="Toggle build version"
+        >
+          <span className="text-2xl font-bold text-text-primary">
+            Benchpress
+          </span>
+          {showBuildLabel && (
+            <span className="flex flex-col pt-0.5 text-[11px] font-medium leading-[1.05] text-text-muted">
+              <span>{__APP_BUILD_VERSION__}</span>
+              <span className="tracking-[0.01em]">{__APP_BUILD_STAMP__}</span>
+            </span>
+          )}
+        </button>
         <button
           onClick={() => navigate("/exercises")}
-          className="flex h-10 w-10 min-h-0 items-center justify-center rounded-full bg-surface-raised text-text-secondary transition-colors active:bg-surface-overlay active:text-text-primary"
+          className="mt-1 flex h-8 w-8 min-h-0 min-w-0 items-center justify-center rounded-full text-text-secondary transition-colors active:bg-surface-raised/70 active:text-text-primary"
+          style={{ minHeight: "2rem", minWidth: "2rem" }}
           aria-label="Edit exercise library"
         >
-          <span className="text-lg leading-none">💪</span>
+          <span className="text-base leading-none">💪</span>
         </button>
       </header>
 
