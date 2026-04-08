@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/Button";
+import { BackupRestoreModal } from "@/components/ui/BackupRestoreModal";
 import { Modal } from "@/components/ui/Modal";
 import { WorkoutListItem } from "@/components/log/WorkoutListItem";
 import { WorkoutDetail } from "@/components/log/WorkoutDetail";
@@ -8,6 +9,9 @@ import { useWorkoutHistory } from "@/hooks/useWorkoutHistory";
 import { repository } from "@/db/repository";
 import { generateId } from "@/lib/utils";
 import type { Workout } from "@/types/models";
+import { useWorkoutStore } from "@/stores/workoutStore";
+
+const TITLE_LONG_PRESS_MS = 700;
 
 export function LogPage() {
   const { workouts, loading, refresh } = useWorkoutHistory();
@@ -15,6 +19,17 @@ export function LogPage() {
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Workout | null>(null);
   const [showBuildLabel, setShowBuildLabel] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const longPressTimerRef = useRef<number | null>(null);
+  const suppressTitleClickRef = useRef(false);
+
+  const clearTitleLongPress = useCallback(() => {
+    if (longPressTimerRef.current == null) return;
+    window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+  }, []);
+
+  useEffect(() => clearTitleLongPress, [clearTitleLongPress]);
 
   const startWorkout = async () => {
     const workout: Workout = {
@@ -34,6 +49,36 @@ export function LogPage() {
     setDeleteTarget(null);
     setSelectedWorkout(null);
     refresh();
+  };
+
+  const handleTitlePointerDown = () => {
+    clearTitleLongPress();
+    longPressTimerRef.current = window.setTimeout(() => {
+      suppressTitleClickRef.current = true;
+      longPressTimerRef.current = null;
+      setShowBackupModal(true);
+    }, TITLE_LONG_PRESS_MS);
+  };
+
+  const handleTitlePointerEnd = () => {
+    clearTitleLongPress();
+  };
+
+  const handleTitleClick = () => {
+    if (suppressTitleClickRef.current) {
+      suppressTitleClickRef.current = false;
+      return;
+    }
+
+    setShowBuildLabel((prev) => !prev);
+  };
+
+  const handleBackupImported = async () => {
+    useWorkoutStore.getState().reset();
+    setSelectedWorkout(null);
+    setDeleteTarget(null);
+    setShowBackupModal(false);
+    await refresh();
   };
 
   // Show workout detail view
@@ -62,9 +107,14 @@ export function LogPage() {
     <div className="min-h-dvh flex flex-col px-4 pt-safe-top pb-safe-bottom">
       <header className="flex items-start justify-between gap-4 py-6">
         <button
-          onClick={() => setShowBuildLabel((prev) => !prev)}
+          onClick={handleTitleClick}
+          onPointerDown={handleTitlePointerDown}
+          onPointerUp={handleTitlePointerEnd}
+          onPointerCancel={handleTitlePointerEnd}
+          onPointerLeave={handleTitlePointerEnd}
+          onContextMenu={(event) => event.preventDefault()}
           className="flex min-h-0 items-start gap-2 text-left"
-          aria-label="Toggle build version"
+          aria-label="Toggle build version or long-press for database backup"
         >
           <span className="text-2xl font-bold text-text-primary">
             Benchpress
@@ -120,6 +170,11 @@ export function LogPage() {
         confirmVariant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <BackupRestoreModal
+        open={showBackupModal}
+        onClose={() => setShowBackupModal(false)}
+        onImported={handleBackupImported}
       />
     </div>
   );
