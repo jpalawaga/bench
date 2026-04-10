@@ -49,7 +49,7 @@ export function RestTimer({
       hasAdjustedAudioSessionRef.current = true;
     }
 
-    for (const sessionType of ["transient", "ambient"] as const) {
+    for (const sessionType of ["playback", "transient", "ambient"] as const) {
       try {
         if (audioSession.type !== sessionType) {
           audioSession.type = sessionType;
@@ -164,6 +164,29 @@ export function RestTimer({
     void primeAudio();
     start();
   }, [autoStartSignal, durationSeconds, start]);
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      void primeAudio();
+    };
+
+    window.addEventListener("pointerdown", unlockAudio, {
+      passive: true,
+      capture: true,
+    });
+    window.addEventListener("keydown", unlockAudio, {
+      capture: true,
+    });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio, {
+        capture: true,
+      });
+      window.removeEventListener("keydown", unlockAudio, {
+        capture: true,
+      });
+    };
+  }, []);
 
   useEffect(() => {
     return () => {

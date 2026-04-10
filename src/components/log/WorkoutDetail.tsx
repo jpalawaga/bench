@@ -62,6 +62,15 @@ export function WorkoutDetail({
       </header>
 
       <div className="flex flex-col gap-4 flex-1">
+        {workout.notes?.trim() && (
+          <div className="rounded-xl bg-surface-raised p-4">
+            <p className="text-text-muted text-xs mb-2">Workout Notes</p>
+            <p className="whitespace-pre-wrap text-sm leading-6 text-text-secondary">
+              {workout.notes.trim()}
+            </p>
+          </div>
+        )}
+
         {workout.blocks.length === 0 ? (
           <p className="text-text-muted text-center mt-8">
             No exercises recorded.
@@ -75,6 +84,11 @@ export function WorkoutDetail({
               <p className="text-text-muted text-xs mb-2">
                 Block {block.order}
               </p>
+              {block.notes?.trim() && (
+                <p className="mb-3 whitespace-pre-wrap text-sm leading-6 text-text-secondary">
+                  {block.notes.trim()}
+                </p>
+              )}
               {block.exercises.map((ex) => (
                 <div key={ex.id} className="mb-3 last:mb-0">
                   <p className="text-text-primary font-semibold">

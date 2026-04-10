@@ -56,6 +56,7 @@ export interface Block {
   order: number;
   status: BlockStatus;
   restTimerSeconds: number | null;
+  notes?: string;
   exercises: BlockExercise[];
 }
 
@@ -68,5 +69,6 @@ export interface Workout {
   status: WorkoutStatus;
   startedAt: Timestamp;
   completedAt: Timestamp | null;
+  notes?: string;
   blocks: Block[];
 }

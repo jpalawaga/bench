@@ -4,9 +4,13 @@ import { RestTimerSlider } from "@/components/workout/RestTimerSlider";
 import { WorkoutNumberInput } from "@/components/workout/WorkoutNumberInput";
 import { TabBar } from "@/components/ui/TabBar";
 import { Button } from "@/components/ui/Button";
-import { useWorkoutStore } from "@/stores/workoutStore";
+import {
+  getFirstIncompleteSetIndex,
+  useWorkoutStore,
+} from "@/stores/workoutStore";
 import {
   repository,
+  type BlockNoteHistoryEntry,
   type ExerciseNoteHistoryEntry,
 } from "@/db/repository";
 import { formatDateTime } from "@/lib/utils";
@@ -40,7 +44,9 @@ export function BlockInProgressView() {
   const setRestTimer = useWorkoutStore((s) => s.setRestTimer);
   const finishBlock = useWorkoutStore((s) => s.finishBlock);
   const updateExerciseNotes = useWorkoutStore((s) => s.updateExerciseNotes);
+  const updateBlockNotes = useWorkoutStore((s) => s.updateBlockNotes);
   const [recentNotes, setRecentNotes] = useState<ExerciseNoteHistoryEntry[]>([]);
+  const [recentBlockNotes, setRecentBlockNotes] = useState<BlockNoteHistoryEntry[]>([]);
   const [timerStartSignal, setTimerStartSignal] = useState(0);
   const [showTimerConfigurator, setShowTimerConfigurator] = useState(false);
   const [notesMode, setNotesMode] = useState<NotesMode>("hidden");
@@ -54,9 +60,7 @@ export function BlockInProgressView() {
   const previousExerciseTabIndexRef = useRef(activeExerciseTabIndex);
   const exerciseTransitionTimeoutRef = useRef<number | null>(null);
   const exerciseTransitionStartTimeoutRef = useRef<number | null>(null);
-
-  const setTabIndex = (index: number) =>
-    useWorkoutStore.setState({ activeExerciseTabIndex: index });
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const block = workout?.blocks[activeBlockIndex];
   const exerciseNames = block?.exercises.map((e) => e.exerciseName) ?? [];
@@ -91,6 +95,33 @@ export function BlockInProgressView() {
       cancelled = true;
     };
   }, [activeExercise?.exerciseId]);
+
+  useEffect(() => {
+    if (!block || block.exercises.length === 0) {
+      setRecentBlockNotes([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    void repository
+      .getRecentBlockNotes(
+        block.exercises.map((exercise) => exercise.exerciseId),
+        2,
+      )
+      .then((entries) => {
+        if (!cancelled) {
+          setRecentBlockNotes(entries);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    block?.exercises.length,
+    block?.exercises.map((exercise) => exercise.exerciseId).join("|"),
+  ]);
 
   useEffect(() => {
     setNotesMode("hidden");
@@ -142,6 +173,51 @@ export function BlockInProgressView() {
   }, []);
 
   if (!workout || !block) return null;
+
+  const getInputKey = (
+    exerciseIndex: number,
+    setIndex: number,
+    field: "reps" | "weight",
+  ) => `${exerciseIndex}-${setIndex}-${field}`;
+
+  const focusInput = (
+    exerciseIndex: number,
+    setIndex: number,
+    field: "reps" | "weight",
+  ) => {
+    inputRefs.current[getInputKey(exerciseIndex, setIndex, field)]?.focus();
+  };
+
+  const resolveActiveSetIndex = (exerciseIndex: number) => {
+    if (activeSetExerciseIndex === exerciseIndex && activeSetIndex != null) {
+      return activeSetIndex;
+    }
+
+    return getFirstIncompleteSetIndex(block.exercises[exerciseIndex]);
+  };
+
+  const completeSet = (exerciseIndex: number, setIndex: number) => {
+    const set = block.exercises[exerciseIndex]?.sets[setIndex];
+    if (!set) return;
+
+    recordActual(
+      exerciseIndex,
+      setIndex,
+      set.actual.reps ?? set.goal.reps,
+      set.actual.weight ?? set.goal.weight,
+    );
+    advanceActiveSet(exerciseIndex, setIndex);
+    setTimerStartSignal((prev) => prev + 1);
+  };
+
+  const handleTabChange = (index: number) => {
+    const nextActiveSetIndex = getFirstIncompleteSetIndex(block.exercises[index]);
+    useWorkoutStore.setState({
+      activeExerciseTabIndex: index,
+      activeSetExerciseIndex: nextActiveSetIndex != null ? index : null,
+      activeSetIndex: nextActiveSetIndex,
+    });
+  };
 
   const markNotesSeen = () => {
     if (!activeExercise) return;
@@ -290,8 +366,7 @@ export function BlockInProgressView() {
           {exercise.sets.map((set, si) => {
             const isFilled =
               set.actual.reps != null && set.actual.weight != null;
-            const isActiveSet =
-              activeSetExerciseIndex === exerciseIndex && activeSetIndex === si;
+            const isActiveSet = resolveActiveSetIndex(exerciseIndex) === si;
 
             return (
               <div
@@ -303,16 +378,7 @@ export function BlockInProgressView() {
                 }`}
               >
                 <button
-                  onClick={() => {
-                    recordActual(
-                      exerciseIndex,
-                      si,
-                      set.goal.reps,
-                      set.goal.weight,
-                    );
-                    advanceActiveSet(exerciseIndex, si);
-                    setTimerStartSignal((prev) => prev + 1);
-                  }}
+                  onClick={() => completeSet(exerciseIndex, si)}
                   disabled={!isVisibleExercise}
                   className={`
                     flex h-6 w-6 min-h-0 shrink-0 items-center justify-center rounded-full transition-colors
@@ -360,6 +426,14 @@ export function BlockInProgressView() {
                     placeholder={String(set.goal.reps)}
                     fallbackValue={set.goal.reps}
                     min={0}
+                    enterKeyHint="next"
+                    onSubmit={() => {
+                      setActiveSet(exerciseIndex, si);
+                      focusInput(exerciseIndex, si, "weight");
+                    }}
+                    externalRef={(node) => {
+                      inputRefs.current[getInputKey(exerciseIndex, si, "reps")] = node;
+                    }}
                     className="h-9 w-14 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
                   />
                   <span className="text-text-muted text-sm">x</span>
@@ -376,6 +450,11 @@ export function BlockInProgressView() {
                     }
                     placeholder={String(set.goal.weight)}
                     fallbackValue={set.goal.weight}
+                    enterKeyHint="done"
+                    onSubmit={() => completeSet(exerciseIndex, si)}
+                    externalRef={(node) => {
+                      inputRefs.current[getInputKey(exerciseIndex, si, "weight")] = node;
+                    }}
                     className="h-9 w-18 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
                   />
                 </div>
@@ -485,13 +564,46 @@ export function BlockInProgressView() {
         <TabBar
           tabs={exerciseNames}
           activeIndex={activeExerciseTabIndex}
-          onTabChange={setTabIndex}
+          onTabChange={handleTabChange}
         />
       </div>
 
       {/* Active Exercise */}
       {activeExercise && (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto pb-6">
+          <div className="rounded-2xl border border-border bg-surface-raised/95 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary">
+              Block Notes
+            </p>
+            <textarea
+              value={block.notes ?? ""}
+              onChange={(event) => updateBlockNotes(event.target.value)}
+              placeholder="How this block felt, cues to remember, equipment notes"
+              rows={4}
+              className="mt-3 w-full resize-none rounded-lg bg-surface-overlay/55 px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/75 focus:outline-none"
+            />
+            {recentBlockNotes.length > 0 && (
+              <div className="mt-4 flex flex-col gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                  Recent Block Notes
+                </p>
+                {recentBlockNotes.map((entry, index) => (
+                  <div
+                    key={`${entry.startedAt}-${index}`}
+                    className="rounded-xl border border-border bg-surface-overlay/40 p-3"
+                  >
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted">
+                      {formatDateTime(entry.startedAt)}
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-text-secondary">
+                      {entry.note}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {exerciseTransition ? (
             <div className="overflow-hidden">
               <div

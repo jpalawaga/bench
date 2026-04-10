@@ -96,6 +96,7 @@ function isBlock(value: unknown): value is Block {
       value.status === "in-progress" ||
       value.status === "finished") &&
     (value.restTimerSeconds === null || isFiniteNumber(value.restTimerSeconds)) &&
+    (value.notes === undefined || isString(value.notes)) &&
     value.exercises.every(isBlockExercise)
   );
 }
@@ -108,6 +109,7 @@ function isWorkout(value: unknown): value is Workout {
     (value.status === "active" || value.status === "completed") &&
     isFiniteNumber(value.startedAt) &&
     (value.completedAt === null || isFiniteNumber(value.completedAt)) &&
+    (value.notes === undefined || isString(value.notes)) &&
     value.blocks.every(isBlock)
   );
 }

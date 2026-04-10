@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type Ref } from "react";
 import { selectInputValue } from "@/lib/utils";
 
 const HOLD_DELAY_MS = 250;
@@ -15,6 +15,9 @@ interface WorkoutNumberInputProps {
   min?: number;
   max?: number;
   step?: number;
+  enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
+  onSubmit?: () => void;
+  externalRef?: Ref<HTMLInputElement>;
 }
 
 interface ScrubState {
@@ -41,6 +44,9 @@ export function WorkoutNumberInput({
   min,
   max,
   step = 1,
+  enterKeyHint,
+  onSubmit,
+  externalRef,
 }: WorkoutNumberInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const holdTimeoutRef = useRef<number | null>(null);
@@ -157,7 +163,17 @@ export function WorkoutNumberInput({
 
   return (
     <input
-      ref={inputRef}
+      ref={(node) => {
+        inputRef.current = node;
+
+        if (!externalRef) return;
+        if (typeof externalRef === "function") {
+          externalRef(node);
+          return;
+        }
+
+        externalRef.current = node;
+      }}
       type="number"
       inputMode="numeric"
       pattern="-?[0-9]*"
@@ -186,6 +202,14 @@ export function WorkoutNumberInput({
         onChange(nextValue === "" ? null : Number(nextValue));
       }}
       onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== "NumpadEnter") return;
+        if (!onSubmit) return;
+
+        event.preventDefault();
+        onSubmit();
+      }}
+      enterKeyHint={enterKeyHint}
       placeholder={placeholder}
       className={`${className} touch-none [webkit-touch-callout:none]`}
     />

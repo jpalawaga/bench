@@ -51,9 +51,64 @@ interface WorkoutState {
     targets: BlockExercise["nextSessionTargets"],
   ) => void;
   finishWorkout: () => Promise<void>;
+  updateWorkoutNotes: (notes: string) => void;
+  updateBlockNotes: (notes: string) => void;
   updateExerciseNotes: (exerciseIndex: number, notes: string) => void;
   persist: () => Promise<void>;
   reset: () => void;
+}
+
+function normalizeWorkout(workout: Workout): Workout {
+  return {
+    ...workout,
+    notes: workout.notes ?? "",
+    blocks: workout.blocks.map((block) => ({
+      ...block,
+      notes: block.notes ?? "",
+    })),
+  };
+}
+
+function isSetIncomplete(exercise: BlockExercise, setIndex: number): boolean {
+  const set = exercise.sets[setIndex];
+  return Boolean(set && (set.actual.reps == null || set.actual.weight == null));
+}
+
+export function getFirstIncompleteSetIndex(
+  exercise: BlockExercise | undefined,
+): number | null {
+  if (!exercise) return null;
+
+  const firstIncompleteIndex = exercise.sets.findIndex(
+    (set) => set.actual.reps == null || set.actual.weight == null,
+  );
+
+  return firstIncompleteIndex >= 0 ? firstIncompleteIndex : null;
+}
+
+export function getNextExerciseWithUnfinishedSet(
+  block: Block,
+  currentExerciseIndex: number,
+): { exerciseIndex: number; setIndex: number } | null {
+  const exerciseCount = block.exercises.length;
+  if (exerciseCount === 0) return null;
+
+  if (exerciseCount > 1) {
+    for (let offset = 1; offset < exerciseCount; offset += 1) {
+      const exerciseIndex = (currentExerciseIndex + offset) % exerciseCount;
+      const setIndex = getFirstIncompleteSetIndex(block.exercises[exerciseIndex]);
+      if (setIndex != null) {
+        return { exerciseIndex, setIndex };
+      }
+    }
+  }
+
+  const currentSetIndex = getFirstIncompleteSetIndex(
+    block.exercises[currentExerciseIndex],
+  );
+  return currentSetIndex != null
+    ? { exerciseIndex: currentExerciseIndex, setIndex: currentSetIndex }
+    : null;
 }
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
@@ -68,7 +123,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
   loadWorkout: (workout) =>
     set({
-      workout,
+      workout: normalizeWorkout(workout),
       currentView: "block-list",
       activeSetExerciseIndex: null,
       activeSetIndex: null,
@@ -86,6 +141,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       order: workout.blocks.length + 1,
       status: "planning",
       restTimerSeconds: lastBlock?.restTimerSeconds ?? null,
+      notes: "",
       exercises: [],
     };
     const updated = {
@@ -201,30 +257,21 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       return;
     }
 
-    const orderedPositions = Array.from(
-      { length: Math.max(...block.exercises.map((exercise) => exercise.sets.length), 0) },
-      (_, roundIndex) =>
-        block.exercises.flatMap((exercise, exerciseIdx) =>
-          exercise.sets[roundIndex]
-            ? [{ exerciseIndex: exerciseIdx, setIndex: roundIndex }]
-            : [],
-        ),
-    ).flat();
-
-    const currentPositionIndex = orderedPositions.findIndex(
-      (position) =>
-        position.exerciseIndex === exerciseIndex && position.setIndex === setIndex,
+    const currentExercise = block.exercises[exerciseIndex];
+    if (!currentExercise) {
+      set({ activeSetExerciseIndex: null, activeSetIndex: null });
+      return;
+    }
+    const shouldAdvanceWithinCurrentExercise = isSetIncomplete(
+      currentExercise,
+      setIndex,
     );
-
-    const nextPosition = orderedPositions
-      .slice(currentPositionIndex + 1)
-      .find(({ exerciseIndex: nextExerciseIndex, setIndex: nextSetIndex }) => {
-        const nextSet = block.exercises[nextExerciseIndex]?.sets[nextSetIndex];
-        return Boolean(
-          nextSet &&
-            (nextSet.actual.reps == null || nextSet.actual.weight == null),
-        );
-      });
+    const nextPosition = shouldAdvanceWithinCurrentExercise
+      ? {
+          exerciseIndex,
+          setIndex,
+        }
+      : getNextExerciseWithUnfinishedSet(block, exerciseIndex);
 
     set({
       activeSetExerciseIndex: nextPosition?.exerciseIndex ?? null,
@@ -240,12 +287,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const blocks = workout.blocks.map((b, i) =>
       i === activeBlockIndex ? { ...b, status: "in-progress" as const } : b,
     );
+    const initialSetIndex = getFirstIncompleteSetIndex(blocks[activeBlockIndex]?.exercises[0]);
     set({
       workout: { ...workout, blocks },
       currentView: "block-in-progress",
       activeExerciseTabIndex: 0,
-      activeSetExerciseIndex: null,
-      activeSetIndex: null,
+      activeSetExerciseIndex: initialSetIndex != null ? 0 : null,
+      activeSetIndex: initialSetIndex,
     });
     get().persist();
   },
@@ -367,6 +415,23 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       );
       return { ...b, exercises };
     });
+    set({ workout: { ...workout, blocks } });
+    get().persist();
+  },
+
+  updateWorkoutNotes: (notes) => {
+    const { workout } = get();
+    if (!workout) return;
+    set({ workout: { ...workout, notes } });
+    get().persist();
+  },
+
+  updateBlockNotes: (notes) => {
+    const { workout, activeBlockIndex } = get();
+    if (!workout) return;
+    const blocks = workout.blocks.map((block, index) =>
+      index === activeBlockIndex ? { ...block, notes } : block,
+    );
     set({ workout: { ...workout, blocks } });
     get().persist();
   },

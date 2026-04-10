@@ -37,6 +37,7 @@ export function LogPage() {
       status: "active",
       startedAt: Date.now(),
       completedAt: null,
+      notes: "",
       blocks: [],
     };
     await repository.saveWorkout(workout);

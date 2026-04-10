@@ -13,6 +13,16 @@ export interface ExerciseNoteHistoryEntry {
   startedAt: number;
 }
 
+export interface WorkoutNoteHistoryEntry {
+  note: string;
+  startedAt: number;
+}
+
+export interface BlockNoteHistoryEntry {
+  note: string;
+  startedAt: number;
+}
+
 export interface ExerciseHistoryEntry {
   workoutId: ID;
   startedAt: number;
@@ -51,11 +61,27 @@ export interface WorkoutRepository {
     exerciseId: ID,
     limit: number,
   ): Promise<ExerciseNoteHistoryEntry[]>;
+  getRecentWorkoutNotes(limit: number): Promise<WorkoutNoteHistoryEntry[]>;
+  getRecentBlockNotes(
+    exerciseIds: ID[],
+    limit: number,
+  ): Promise<BlockNoteHistoryEntry[]>;
   getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]>;
 }
 
 class DexieWorkoutRepository implements WorkoutRepository {
   private seeded = false;
+
+  private normalizeWorkout(workout: Workout): Workout {
+    return {
+      ...workout,
+      notes: workout.notes ?? "",
+      blocks: workout.blocks.map((block) => ({
+        ...block,
+        notes: block.notes ?? "",
+      })),
+    };
+  }
 
   private async ensureSeeded(): Promise<void> {
     if (this.seeded) return;
@@ -67,15 +93,17 @@ class DexieWorkoutRepository implements WorkoutRepository {
   }
 
   async saveWorkout(workout: Workout): Promise<void> {
-    await db.workouts.put(workout);
+    await db.workouts.put(this.normalizeWorkout(workout));
   }
 
   async getWorkout(id: ID): Promise<Workout | undefined> {
-    return db.workouts.get(id);
+    const workout = await db.workouts.get(id);
+    return workout ? this.normalizeWorkout(workout) : undefined;
   }
 
   async getAllWorkouts(): Promise<Workout[]> {
-    return db.workouts.orderBy("startedAt").reverse().toArray();
+    const workouts = await db.workouts.orderBy("startedAt").reverse().toArray();
+    return workouts.map((workout) => this.normalizeWorkout(workout));
   }
 
   async deleteWorkout(id: ID): Promise<void> {
@@ -83,7 +111,8 @@ class DexieWorkoutRepository implements WorkoutRepository {
   }
 
   async getActiveWorkout(): Promise<Workout | undefined> {
-    return db.workouts.where("status").equals("active").first();
+    const workout = await db.workouts.where("status").equals("active").first();
+    return workout ? this.normalizeWorkout(workout) : undefined;
   }
 
   async getAllExercises(): Promise<Exercise[]> {
@@ -220,11 +249,11 @@ class DexieWorkoutRepository implements WorkoutRepository {
     exerciseId: ID,
     limit: number,
   ): Promise<ExerciseNoteHistoryEntry[]> {
-    const workouts = await db.workouts
+    const workouts = (await db.workouts
       .where("status")
       .equals("completed")
       .reverse()
-      .sortBy("startedAt");
+      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
 
     const entries: ExerciseNoteHistoryEntry[] = [];
 
@@ -251,12 +280,75 @@ class DexieWorkoutRepository implements WorkoutRepository {
     return entries;
   }
 
-  async getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]> {
-    const workouts = await db.workouts
+  async getRecentWorkoutNotes(limit: number): Promise<WorkoutNoteHistoryEntry[]> {
+    const workouts = (await db.workouts
       .where("status")
       .equals("completed")
       .reverse()
-      .sortBy("startedAt");
+      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
+
+    const entries: WorkoutNoteHistoryEntry[] = [];
+
+    for (const workout of workouts) {
+      if (!workout.notes?.trim()) continue;
+
+      entries.push({
+        note: workout.notes.trim(),
+        startedAt: workout.startedAt,
+      });
+
+      if (entries.length >= limit) {
+        return entries;
+      }
+    }
+
+    return entries;
+  }
+
+  async getRecentBlockNotes(
+    exerciseIds: ID[],
+    limit: number,
+  ): Promise<BlockNoteHistoryEntry[]> {
+    const workouts = (await db.workouts
+      .where("status")
+      .equals("completed")
+      .reverse()
+      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
+
+    const targetSignature = [...exerciseIds].sort().join("|");
+    const entries: BlockNoteHistoryEntry[] = [];
+
+    for (const workout of workouts) {
+      for (const block of workout.blocks) {
+        if (block.status !== "finished") continue;
+        if (!block.notes?.trim()) continue;
+
+        const blockSignature = block.exercises
+          .map((exercise) => exercise.exerciseId)
+          .sort()
+          .join("|");
+        if (blockSignature !== targetSignature) continue;
+
+        entries.push({
+          note: block.notes.trim(),
+          startedAt: workout.startedAt,
+        });
+
+        if (entries.length >= limit) {
+          return entries;
+        }
+      }
+    }
+
+    return entries;
+  }
+
+  async getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]> {
+    const workouts = (await db.workouts
+      .where("status")
+      .equals("completed")
+      .reverse()
+      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
 
     const entries: ExerciseHistoryEntry[] = [];
 
