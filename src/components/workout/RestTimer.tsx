@@ -32,6 +32,7 @@ export function RestTimer({
 }: RestTimerProps) {
   const { timeRemaining, isRunning, isExpired, start, reset } =
     useTimer(durationSeconds);
+  const isTimerEnabled = durationSeconds > 0;
   const audioContextRef = useRef<AudioContext | null>(null);
   const hasPrimedAudioRef = useRef(false);
   const lastAutoStartSignalRef = useRef(autoStartSignal);
@@ -49,7 +50,9 @@ export function RestTimer({
       hasAdjustedAudioSessionRef.current = true;
     }
 
-    for (const sessionType of ["playback", "transient", "ambient"] as const) {
+    // Prefer a mixing-friendly session so timer alerts do not steal audio
+    // focus from background media like Spotify.
+    for (const sessionType of ["ambient", "transient", "playback"] as const) {
       try {
         if (audioSession.type !== sessionType) {
           audioSession.type = sessionType;
@@ -61,8 +64,38 @@ export function RestTimer({
     }
   };
 
-  const getAudioContext = () => {
-    if (typeof window === "undefined") return null;
+  const restoreAudioSession = () => {
+    const audioSession = (
+      typeof navigator !== "undefined"
+        ? (navigator as NavigatorWithAudioSession).audioSession
+        : undefined
+    );
+
+    if (
+      audioSession &&
+      hasAdjustedAudioSessionRef.current &&
+      originalAudioSessionTypeRef.current
+    ) {
+      try {
+        audioSession.type = originalAudioSessionTypeRef.current;
+      } catch {
+        // Ignore restore failures on unsupported platforms.
+      }
+    }
+
+    hasAdjustedAudioSessionRef.current = false;
+    originalAudioSessionTypeRef.current = null;
+  };
+
+  const disposeAudioContext = () => {
+    restoreAudioSession();
+    void audioContextRef.current?.close();
+    audioContextRef.current = null;
+    hasPrimedAudioRef.current = false;
+  };
+
+  const ensureAudioContext = () => {
+    if (typeof window === "undefined" || !isTimerEnabled) return null;
 
     configureAudioSession();
 
@@ -85,7 +118,7 @@ export function RestTimer({
   };
 
   const playAlert = () => {
-    const audioContext = getAudioContext();
+    const audioContext = audioContextRef.current;
     if (!audioContext) return;
 
     const startAt = audioContext.currentTime + 0.02;
@@ -113,7 +146,7 @@ export function RestTimer({
   };
 
   const primeAudio = async () => {
-    const audioContext = getAudioContext();
+    const audioContext = ensureAudioContext();
     if (!audioContext) return;
 
     if (audioContext.state === "suspended") {
@@ -138,8 +171,8 @@ export function RestTimer({
   };
 
   const playAlertIfPossible = async () => {
-    const audioContext = getAudioContext();
-    if (!audioContext) return;
+    const audioContext = audioContextRef.current;
+    if (!audioContext || !hasPrimedAudioRef.current) return;
 
     if (audioContext.state === "suspended") {
       await audioContext.resume();
@@ -159,62 +192,24 @@ export function RestTimer({
     if (autoStartSignal === lastAutoStartSignalRef.current) return;
     lastAutoStartSignalRef.current = autoStartSignal;
 
-    if (durationSeconds <= 0) return;
+    if (!isTimerEnabled) return;
 
-    void primeAudio();
     start();
-  }, [autoStartSignal, durationSeconds, start]);
+  }, [autoStartSignal, isTimerEnabled, start]);
 
   useEffect(() => {
-    const unlockAudio = () => {
-      void primeAudio();
-    };
-
-    window.addEventListener("pointerdown", unlockAudio, {
-      passive: true,
-      capture: true,
-    });
-    window.addEventListener("keydown", unlockAudio, {
-      capture: true,
-    });
-
-    return () => {
-      window.removeEventListener("pointerdown", unlockAudio, {
-        capture: true,
-      });
-      window.removeEventListener("keydown", unlockAudio, {
-        capture: true,
-      });
-    };
-  }, []);
+    if (isTimerEnabled) return;
+    disposeAudioContext();
+  }, [isTimerEnabled]);
 
   useEffect(() => {
     return () => {
-      const audioSession = (
-        typeof navigator !== "undefined"
-          ? (navigator as NavigatorWithAudioSession).audioSession
-          : undefined
-      );
-
-      if (
-        audioSession &&
-        hasAdjustedAudioSessionRef.current &&
-        originalAudioSessionTypeRef.current
-      ) {
-        try {
-          audioSession.type = originalAudioSessionTypeRef.current;
-        } catch {
-          // Ignore restore failures on unsupported platforms.
-        }
-      }
-
-      void audioContextRef.current?.close();
-      audioContextRef.current = null;
+      disposeAudioContext();
     };
   }, []);
 
   const handleTap = () => {
-    if (durationSeconds <= 0) {
+    if (!isTimerEnabled) {
       onConfigureRequested?.();
     } else if (isExpired) {
       reset();
@@ -227,7 +222,7 @@ export function RestTimer({
   return (
     <button
       onPointerDown={() => {
-        if (!isRunning) {
+        if (isTimerEnabled && !isRunning) {
           void primeAudio();
         }
       }}
