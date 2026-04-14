@@ -48,15 +48,15 @@ export function SetRow({
   return (
     <div
       data-testid={`set-row-${setNumber}`}
-      className="grid grid-cols-[3.2rem_minmax(0,1fr)_auto_auto] items-center gap-2 rounded-lg bg-surface-overlay/18 px-2.5 py-1.5"
+      className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] items-center gap-1.5 rounded-lg bg-surface-overlay/18 px-2 py-1.5"
     >
-      <span className="w-12 shrink-0 text-[13px] font-medium text-text-muted">
+      <span className="w-9 shrink-0 text-[13px] font-medium text-text-muted">
         {setLabel}
       </span>
 
       <div
         data-testid={`set-row-inputs-${setNumber}`}
-        className="flex min-w-0 items-center gap-1.5 whitespace-nowrap"
+        className="flex min-w-0 items-center gap-1 whitespace-nowrap"
       >
         <WorkoutNumberInput
           value={goal.reps || null}
@@ -64,7 +64,7 @@ export function SetRow({
           placeholder="Reps"
           min={0}
           className={`
-            h-8 w-[3rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
+            h-8 w-[2.7rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
             placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
           `}
         />
@@ -74,20 +74,17 @@ export function SetRow({
           onChange={(value) => onWeightChange(value ?? 0)}
           placeholder="lbs"
           className={`
-            h-8 w-[3.7rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
+            h-8 w-[3.2rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
             placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
           `}
         />
-        <span className="text-text-muted text-[11px] uppercase tracking-[0.06em]">
-          lbs
-        </span>
         <span className="text-text-muted text-xs">x</span>
         <div className="relative shrink-0">
           <select
             value={amount}
             onChange={(event) => onAmountChange(Number(event.target.value))}
             aria-label={`Set count for ${setLabel}`}
-            className="h-8 w-[3.2rem] appearance-none rounded-md bg-surface-overlay/70 px-2 pr-6 text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
+            className="h-8 w-[2.9rem] appearance-none rounded-md bg-surface-overlay/70 px-1.5 pr-5 text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
           >
             {amountOptions.map((option) => (
               <option key={option} value={option}>
@@ -118,7 +115,7 @@ export function SetRow({
       >
         {proposalLabel && (
           <span
-            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold leading-none tracking-[0.08em] ${getProposalClasses(goal)}`}
+            className={`shrink-0 rounded-full border px-1.25 py-0.5 text-[8px] font-semibold leading-none tracking-[0.08em] ${getProposalClasses(goal)}`}
           >
             {proposalLabel}
           </span>

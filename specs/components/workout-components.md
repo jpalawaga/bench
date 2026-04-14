@@ -117,7 +117,7 @@ Shared explicit-row editor used in both:
 - set labels are derived from cumulative set order and may render a range like `S1-3`
 - adding a row duplicates the previous row's reps and weight while resetting the new row's amount to `1` and clearing proposal metadata
 - proposal badges and remove actions must remain visible on narrow screens; they cannot be pushed off-screen by the row inputs
-- rows should remain compact enough to stay on one line on narrow phones, using reduced badge chrome and tighter input spacing rather than wrapping the set editor into multiple lines
+- rows should remain compact enough to stay on one line on narrow phones, using reduced badge chrome, tighter spacing between the set label and inputs, and narrower numeric controls rather than wrapping the set editor into multiple lines
 - when a proposal badge is present, it sits centered in the remaining space between the numeric inputs and the remove action rather than hugging the trailing edge
 
 ## WorkoutNumberInput

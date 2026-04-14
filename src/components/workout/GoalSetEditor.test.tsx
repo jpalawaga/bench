@@ -147,7 +147,7 @@ describe("GoalSetEditor", () => {
     expect(screen.getByLabelText("Remove set 1")).toBeTruthy();
     expect(screen.getByLabelText("Remove set 2")).toBeTruthy();
     expect(screen.getByTestId("set-row-1").className).toContain(
-      "grid-cols-[3.2rem_minmax(0,1fr)_auto_auto]",
+      "grid-cols-[2.5rem_minmax(0,1fr)_auto_auto]",
     );
     expect(screen.getByTestId("set-row-inputs-1").className).not.toContain(
       "flex-wrap",
