@@ -108,6 +108,9 @@ describe("note surfaces", () => {
     const notesButton = screen.getByRole("button", { name: /^Notes$/i });
 
     expect(notesButton.getAttribute("aria-expanded")).toBe("false");
+    await waitFor(() => {
+      expect(notesButton.querySelector(".bg-orange-400")).not.toBeNull();
+    });
 
     fireEvent.click(notesButton);
 
@@ -136,6 +139,41 @@ describe("note surfaces", () => {
     fireEvent.click(notesButton);
 
     expect(notesButton.getAttribute("aria-expanded")).toBe("false");
+    expect(notesButton.querySelector(".bg-orange-400")).toBeNull();
+  });
+
+  it("does not mark a first-time exercise note as unread while typing it", async () => {
+    setWorkoutState(createWorkout());
+
+    vi.spyOn(repository, "getRecentExerciseNotes").mockResolvedValue([]);
+    vi.spyOn(repository, "getExercise").mockResolvedValue({
+      id: "exercise-1",
+      name: "Bench Press",
+      isCustom: false,
+      formNotes: "",
+    } satisfies Exercise);
+    vi.spyOn(repository, "updateExercise").mockResolvedValue();
+
+    render(<BlockInProgressView />);
+
+    const notesButton = screen.getByRole("button", { name: /^Notes$/i });
+    expect(notesButton.querySelector(".bg-orange-400")).toBeNull();
+
+    fireEvent.click(notesButton);
+
+    const guidanceTextarea = await screen.findByRole("textbox", {
+      name: /Bench Press exercise note/i,
+    });
+
+    fireEvent.change(guidanceTextarea, {
+      target: { value: "New setup reminder" },
+    });
+
+    expect(notesButton.querySelector(".bg-orange-400")).toBeNull();
+
+    fireEvent.click(notesButton);
+
+    expect(notesButton.querySelector(".bg-orange-400")).toBeNull();
   });
 
   it("focuses the working-note editor when adding a blank note", async () => {

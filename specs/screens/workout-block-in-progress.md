@@ -92,7 +92,8 @@ Each pane contains:
 
 ### Seen-state behavior
 
-- exercises with note text show a small unread dot until their notes are opened once during the current visit to this screen
+- exercises that already had guidance note text when their pane was loaded show a small unread dot until their notes are opened once during the current visit to this screen
+- creating a new guidance note during the current visit does not create a new unread state for that same visit
 - switching exercises hides the disclosure
 
 ## Set Table

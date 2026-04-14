@@ -58,6 +58,8 @@ export function BlockInProgressView() {
   const [seenNotesByExerciseId, setSeenNotesByExerciseId] = useState<
     Record<string, boolean>
   >({});
+  const [hadExerciseNotesOnEntryByExerciseId, setHadExerciseNotesOnEntryByExerciseId] =
+    useState<Record<string, boolean>>({});
   const [expandedWorkingNotesByExerciseId, setExpandedWorkingNotesByExerciseId] =
     useState<Record<string, boolean>>({});
   const previousExerciseTabIndexRef = useRef(activeExerciseTabIndex);
@@ -78,10 +80,14 @@ export function BlockInProgressView() {
   const hasSeenNotes = activeExercise
     ? Boolean(seenNotesByExerciseId[activeExercise.exerciseId])
     : false;
+  const hasUnreadExerciseNotes = activeExercise
+    ? Boolean(hadExerciseNotesOnEntryByExerciseId[activeExercise.exerciseId]) &&
+      !hasSeenNotes
+    : false;
   const notesButtonClassName = hasExerciseNotes
-    ? hasSeenNotes
-      ? "text-text-secondary"
-      : "text-text-primary/90"
+    ? hasUnreadExerciseNotes
+      ? "text-text-primary/90"
+      : "text-text-secondary"
     : "text-text-muted";
 
   useEffect(() => {
@@ -127,6 +133,10 @@ export function BlockInProgressView() {
       .then((exercise) => {
         if (!cancelled) {
           const nextNotes = exercise?.formNotes ?? "";
+          setHadExerciseNotesOnEntryByExerciseId((prev) => ({
+            ...prev,
+            [activeExercise.exerciseId]: Boolean(nextNotes.trim()),
+          }));
           activeExerciseRecordRef.current = exercise ?? null;
           activeExerciseFormNotesRef.current = nextNotes;
           isActiveExerciseFormNotesLoadedRef.current = true;
@@ -278,9 +288,7 @@ export function BlockInProgressView() {
       return;
     }
 
-    if (activeExerciseFormNotes.trim()) {
-      markNotesSeen();
-    }
+    markNotesSeen();
 
     setNotesMode("view");
   };
@@ -352,7 +360,7 @@ export function BlockInProgressView() {
               aria-expanded={isGuidanceNotesOpen}
               aria-controls={`exercise-guidance-${exercise.exerciseId}`}
             >
-              {isVisibleExercise && hasExerciseNotes && !hasSeenNotes && (
+              {isVisibleExercise && hasUnreadExerciseNotes && (
                 <span className="h-1 w-1 rounded-full bg-orange-400" />
               )}
               <span>Notes</span>

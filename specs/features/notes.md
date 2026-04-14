@@ -32,6 +32,7 @@ These are notes on the exercise as a whole, not on one specific session. They ar
 - the in-progress `Notes` disclosure contains a compact inline editor for the same `formNotes` field used on the exercise detail screen
 - opening it expands an inline section below the exercise title and rotates the trailing chevron downward
 - edits persist back to the exercise library record when the field blurs, the disclosure closes, the user switches exercises, or the block finishes
+- the unread indicator on the `Notes` affordance only reflects guidance that already existed when that exercise pane was loaded; typing a new note during the current visit does not create a new unread state
 - the disclosure should feel compact and low-chrome rather than like a bordered callout card
 - if no guidance note exists, the `Notes` affordance should still open with an empty textarea and placeholder guidance
 
