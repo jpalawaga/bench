@@ -115,6 +115,7 @@ Shared explicit-row editor used in both:
 - set count changes only through add/remove row actions
 - set numbers are derived labels and are not directly editable
 - adding a row duplicates the previous row values and clears proposal metadata
+- proposal badges and remove actions must remain visible on narrow screens; they cannot be pushed off-screen by the row inputs
 
 ## WorkoutNumberInput
 

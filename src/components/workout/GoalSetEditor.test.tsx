@@ -60,6 +60,7 @@ describe("GoalSetEditor", () => {
     render(<GoalSetEditorHarness />);
 
     expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.getByLabelText("Add Set")).toBeTruthy();
     expect(screen.getByText("S1")).toBeTruthy();
     expect(screen.queryByLabelText("Remove set 1")).toBeNull();
 
@@ -73,5 +74,43 @@ describe("GoalSetEditor", () => {
 
     expect(screen.queryByText("S2")).toBeNull();
     expect(screen.queryByLabelText("Remove set 1")).toBeNull();
+  });
+
+  it("keeps proposal badges and remove actions present together", () => {
+    render(
+      <GoalSetEditor
+        sets={[
+          {
+            id: "set-1",
+            setNumber: 1,
+            goal: {
+              reps: 8,
+              weight: 135,
+              amount: 1,
+              isProposed: true,
+              proposalSource: "planned",
+            },
+          },
+          {
+            id: "set-2",
+            setNumber: 2,
+            goal: {
+              reps: 8,
+              weight: 135,
+              amount: 1,
+              isProposed: false,
+            },
+          },
+        ]}
+        onRepsChange={() => {}}
+        onWeightChange={() => {}}
+        onRemoveSet={() => {}}
+        onAddSet={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("PLANNED")).toBeTruthy();
+    expect(screen.getByLabelText("Remove set 1")).toBeTruthy();
+    expect(screen.getByLabelText("Remove set 2")).toBeTruthy();
   });
 });
