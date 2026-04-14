@@ -76,20 +76,15 @@ Each pane contains:
 ### Open rules
 
 - if the current exercise already has guidance notes, tapping the notes button opens `view`
-- if it has no notes, tapping opens `edit`
+- if it has no guidance notes, tapping opens a lightweight empty state
 - tapping the button again while open dismisses the popover
 
 ### View mode
 
 - shows note text
 - auto-links raw `http`, `https`, and `www.` URLs
-- offers edit and dismiss actions
-
-### Edit mode
-
-- shows an auto-focused textarea
-- changes save immediately as the user types
-- `Done` closes to view mode if there is note text, otherwise closes completely
+- offers a dismiss action
+- if no guidance note exists, shows muted copy explaining that guidance is edited on the exercise detail screen
 
 ### Seen-state behavior
 
@@ -144,6 +139,7 @@ Each pane contains:
 - grey, low-emphasis `+ Add Note` action aligned to the right
 - tapping the action reveals a lightly padded, lightly styled textarea
 - the textarea is for session-specific notes on that exercise instance only
+- if the current exercise already has a working note, the textarea is already visible
 - if there is no current working note and no historical note context, show muted empty-state text such as `_There are no notes_.`
 - show the last two historical working notes for the same exercise below the section in compact muted styling
 - working notes are distinct from the exercise-level guidance surfaced by `Notes >`

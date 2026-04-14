@@ -9,6 +9,7 @@ This is the default workout subview after loading or resuming a workout. It acts
 ### Top action
 
 - full-width `Add Block` button
+- no workout-level note composer on this screen
 
 ### Block list
 

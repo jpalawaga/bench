@@ -14,16 +14,6 @@ export interface ExerciseNoteHistoryEntry {
   startedAt: number;
 }
 
-export interface WorkoutNoteHistoryEntry {
-  note: string;
-  startedAt: number;
-}
-
-export interface BlockNoteHistoryEntry {
-  note: string;
-  startedAt: number;
-}
-
 export interface ExerciseHistoryEntry {
   workoutId: ID;
   startedAt: number;
@@ -62,11 +52,6 @@ export interface WorkoutRepository {
     exerciseId: ID,
     limit: number,
   ): Promise<ExerciseNoteHistoryEntry[]>;
-  getRecentWorkoutNotes(limit: number): Promise<WorkoutNoteHistoryEntry[]>;
-  getRecentBlockNotes(
-    exerciseIds: ID[],
-    limit: number,
-  ): Promise<BlockNoteHistoryEntry[]>;
   getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]>;
 }
 
@@ -273,69 +258,6 @@ class DexieWorkoutRepository implements WorkoutRepository {
           if (entries.length >= limit) {
             return entries;
           }
-        }
-      }
-    }
-
-    return entries;
-  }
-
-  async getRecentWorkoutNotes(limit: number): Promise<WorkoutNoteHistoryEntry[]> {
-    const workouts = (await db.workouts
-      .where("status")
-      .equals("completed")
-      .reverse()
-      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
-
-    const entries: WorkoutNoteHistoryEntry[] = [];
-
-    for (const workout of workouts) {
-      if (!workout.notes?.trim()) continue;
-
-      entries.push({
-        note: workout.notes.trim(),
-        startedAt: workout.startedAt,
-      });
-
-      if (entries.length >= limit) {
-        return entries;
-      }
-    }
-
-    return entries;
-  }
-
-  async getRecentBlockNotes(
-    exerciseIds: ID[],
-    limit: number,
-  ): Promise<BlockNoteHistoryEntry[]> {
-    const workouts = (await db.workouts
-      .where("status")
-      .equals("completed")
-      .reverse()
-      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
-
-    const targetSignature = [...exerciseIds].sort().join("|");
-    const entries: BlockNoteHistoryEntry[] = [];
-
-    for (const workout of workouts) {
-      for (const block of workout.blocks) {
-        if (block.status !== "finished") continue;
-        if (!block.notes?.trim()) continue;
-
-        const blockSignature = block.exercises
-          .map((exercise) => exercise.exerciseId)
-          .sort()
-          .join("|");
-        if (blockSignature !== targetSignature) continue;
-
-        entries.push({
-          note: block.notes.trim(),
-          startedAt: workout.startedAt,
-        });
-
-        if (entries.length >= limit) {
-          return entries;
         }
       }
     }

@@ -29,7 +29,8 @@ These are notes on the exercise as a whole, not on one specific session. They ar
 
 - the guidance note is treated as lightweight reference material
 - it is not the main writing surface during a workout
-- if no guidance note exists, the `Notes >` affordance should still allow the user to add one
+- the in-progress `Notes >` surface is read-only reference material, not an editor
+- if no guidance note exists, the `Notes >` affordance should still open and explain that guidance can be added from the exercise detail screen
 
 ## 2. Working Notes
 
@@ -58,6 +59,7 @@ These are notes on a particular exercise within a specific workout session. They
 - right side of the heading: grey, low-emphasis `+ Add Note` action
 - tapping the action reveals a lightly styled, lightly padded textarea
 - the writing surface should feel secondary to set entry, not like a dominant card
+- if the current exercise already has a working note for this session, the textarea should already be visible when the pane opens
 
 ### Empty and history states
 
@@ -68,6 +70,8 @@ These are notes on a particular exercise within a specific workout session. They
 ## Explicit Non-Goals
 
 The intended product note model does **not** center on workout-level notes or block-level notes. If those fields exist in the current implementation, they should be treated as implementation drift or legacy behavior rather than the target note UX.
+
+That means the active workout flow and workout history should not render standalone workout-note or block-note composer panels as part of the intended experience.
 
 ## Screen Mapping
 

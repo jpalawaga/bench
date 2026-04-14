@@ -51,8 +51,6 @@ interface WorkoutState {
     targets: BlockExercise["nextSessionTargets"],
   ) => void;
   finishWorkout: () => Promise<void>;
-  updateWorkoutNotes: (notes: string) => void;
-  updateBlockNotes: (notes: string) => void;
   updateExerciseNotes: (exerciseIndex: number, notes: string) => void;
   persist: () => Promise<void>;
   reset: () => void;
@@ -415,25 +413,8 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       );
       return { ...b, exercises };
     });
-    set({ workout: { ...workout, blocks } });
-    get().persist();
-  },
-
-  updateWorkoutNotes: (notes) => {
-    const { workout } = get();
-    if (!workout) return;
-    set({ workout: { ...workout, notes } });
-    get().persist();
-  },
-
-  updateBlockNotes: (notes) => {
-    const { workout, activeBlockIndex } = get();
-    if (!workout) return;
-    const blocks = workout.blocks.map((block, index) =>
-      index === activeBlockIndex ? { ...block, notes } : block,
-    );
-    set({ workout: { ...workout, blocks } });
-    get().persist();
+  set({ workout: { ...workout, blocks } });
+  get().persist();
   },
 
   updateExerciseNotes: (exerciseIndex, notes) => {

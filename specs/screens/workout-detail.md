@@ -38,6 +38,7 @@ Each block card may include:
 
 - block label like `Block 2`
 - one section per exercise
+- no standalone workout-note or block-note summary text
 
 Each exercise section shows:
 
