@@ -61,6 +61,9 @@ export function BlockInProgressView() {
   const exerciseTransitionTimeoutRef = useRef<number | null>(null);
   const exerciseTransitionStartTimeoutRef = useRef<number | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const workingNotesTextareaRefs = useRef<
+    Record<string, HTMLTextAreaElement | null>
+  >({});
 
   const block = workout?.blocks[activeBlockIndex];
   const exerciseNames = block?.exercises.map((e) => e.exerciseName) ?? [];
@@ -237,6 +240,17 @@ export function BlockInProgressView() {
     setNotesMode("view");
   };
 
+  const focusWorkingNotesTextarea = (exerciseId: string) => {
+    window.requestAnimationFrame(() => {
+      const textarea = workingNotesTextareaRefs.current[exerciseId];
+      if (!textarea) return;
+
+      textarea.focus();
+      const caretPosition = textarea.value.length;
+      textarea.setSelectionRange(caretPosition, caretPosition);
+    });
+  };
+
   const renderExercisePane = (
     exerciseIndex: number,
     paneRole: "static" | "transition",
@@ -250,6 +264,7 @@ export function BlockInProgressView() {
       : "text-text-muted";
     const paneRecentNotes = isVisibleExercise ? recentNotes : [];
     const paneExerciseFormNotes = isVisibleExercise ? activeExerciseFormNotes : "";
+    const isGuidanceNotesOpen = isVisibleExercise && notesMode !== "hidden";
     const shouldShowWorkingNotesEditor =
       Boolean(exercise.notes.trim()) ||
       Boolean(expandedWorkingNotesByExerciseId[exercise.exerciseId]);
@@ -271,37 +286,51 @@ export function BlockInProgressView() {
             onClick={isVisibleExercise ? handleNotesButtonClick : undefined}
             disabled={!isVisibleExercise}
             className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[13px] font-semibold leading-none transition-colors ${paneNotesButtonClassName}`}
+            aria-expanded={isGuidanceNotesOpen}
+            aria-controls={`exercise-guidance-${exercise.exerciseId}`}
           >
             {isVisibleExercise && hasExerciseNotes && !hasSeenNotes && (
               <span className="h-1 w-1 rounded-full bg-orange-400" />
             )}
-            <span>Notes &gt;</span>
+            <span>Notes</span>
+            <span
+              aria-hidden="true"
+              className={`inline-block transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                isGuidanceNotesOpen ? "rotate-90" : ""
+              }`}
+            >
+              &gt;
+            </span>
           </button>
         </div>
 
-        {isVisibleExercise && notesMode !== "hidden" && (
-          <div className="min-w-0 max-w-full pl-1">
-            <div className="ml-3 h-3 w-3 rotate-45 border-l border-t border-border bg-surface-raised/95" />
-            <div className="-mt-1 w-full min-w-0 max-w-full rounded-2xl bg-surface-raised/95 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.3)] sm:max-w-[22rem]">
-              <div className="flex flex-col gap-3">
-                {paneExerciseFormNotes ? (
-                  <p className="min-w-0 break-words text-sm leading-6 text-text-secondary">
-                    <LinkedText text={paneExerciseFormNotes} />
-                  </p>
-                ) : (
-                  <p className="text-sm leading-6 text-text-muted">
-                    No exercise guidance yet. Edit this exercise in the library
-                    to add form cues and reminders.
-                  </p>
-                )}
-
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => setNotesMode("hidden")}
-                    className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted active:text-text-primary"
-                  >
-                    Dismiss
-                  </button>
+        {isVisibleExercise && (
+          <div
+            id={`exercise-guidance-${exercise.exerciseId}`}
+            aria-hidden={!isGuidanceNotesOpen}
+            className="grid min-w-0 max-w-full transition-all duration-200 ease-out motion-reduce:transition-none"
+            style={{
+              gridTemplateRows: isGuidanceNotesOpen ? "1fr" : "0fr",
+              opacity: isGuidanceNotesOpen ? 1 : 0,
+            }}
+          >
+            <div className="overflow-hidden">
+              <div
+                className={`pt-1 transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                  isGuidanceNotesOpen ? "translate-y-0" : "-translate-y-1"
+                }`}
+              >
+                <div className="w-full min-w-0 max-w-full rounded-2xl border border-border bg-surface-raised/70 px-4 py-3 sm:max-w-[22rem]">
+                  {paneExerciseFormNotes ? (
+                    <p className="min-w-0 break-words text-sm leading-6 text-text-secondary">
+                      <LinkedText text={paneExerciseFormNotes} />
+                    </p>
+                  ) : (
+                    <p className="text-sm leading-6 text-text-muted">
+                      No exercise guidance yet. Edit this exercise in the library
+                      to add form cues and reminders.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -453,12 +482,13 @@ export function BlockInProgressView() {
             </p>
             {!shouldShowWorkingNotesEditor ? (
               <button
-                onClick={() =>
+                onClick={() => {
                   setExpandedWorkingNotesByExerciseId((prev) => ({
                     ...prev,
                     [exercise.exerciseId]: true,
-                  }))
-                }
+                  }));
+                  focusWorkingNotesTextarea(exercise.exerciseId);
+                }}
                 disabled={!isVisibleExercise}
                 className="text-sm font-medium text-text-muted active:text-text-primary"
               >
@@ -486,6 +516,10 @@ export function BlockInProgressView() {
               onChange={(event) =>
                 updateExerciseNotes(exerciseIndex, event.target.value)
               }
+              ref={(node) => {
+                workingNotesTextareaRefs.current[exercise.exerciseId] = node;
+              }}
+              aria-label={`${exercise.exerciseName} working note`}
               placeholder="Pain, failed-rep reason, equipment issue, setup change"
               rows={3}
               className="mt-3 w-full resize-none rounded-lg bg-surface-overlay/45 px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/60 focus:outline-none"

@@ -68,6 +68,7 @@ function setWorkoutState(workout: Workout) {
 
 describe("note surfaces", () => {
   beforeEach(() => {
+    vi.spyOn(repository, "saveWorkout").mockResolvedValue();
     useWorkoutStore.getState().reset();
   });
 
@@ -102,11 +103,56 @@ describe("note surfaces", () => {
     expect(screen.queryByText("Block Notes")).toBeNull();
     expect(screen.getByText("Working Notes")).toBeTruthy();
     expect(screen.getByDisplayValue("Session-specific working note")).toBeTruthy();
+    const notesButton = screen.getByRole("button", { name: /^Notes$/i });
 
-    fireEvent.click(screen.getByRole("button", { name: /Notes >/i }));
+    expect(notesButton.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(notesButton);
 
     expect(
       await screen.findByText("Brace hard and keep the wrists stacked."),
+    ).toBeTruthy();
+    expect(notesButton.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.queryByRole("button", { name: /Dismiss/i })).toBeNull();
+
+    fireEvent.click(notesButton);
+
+    expect(notesButton.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("focuses the working-note editor when adding a blank note", async () => {
+    const workout = createWorkout();
+    const firstExercise = workout.blocks[0]?.exercises[0];
+    if (!firstExercise) {
+      throw new Error("Expected the fixture workout to include an exercise");
+    }
+    firstExercise.notes = "";
+    setWorkoutState(workout);
+
+    vi.spyOn(repository, "getRecentExerciseNotes").mockResolvedValue([]);
+    vi.spyOn(repository, "getExercise").mockResolvedValue({
+      id: "exercise-1",
+      name: "Bench Press",
+      isCustom: false,
+      formNotes: "",
+    } satisfies Exercise);
+
+    render(<BlockInProgressView />);
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Add Note/i }));
+
+    const textarea = await screen.findByRole("textbox", {
+      name: /Bench Press working note/i,
+    });
+
+    expect(document.activeElement).toBe(textarea);
+
+    fireEvent.change(textarea, {
+      target: { value: "Needed a slower setup before unracking." },
+    });
+
+    expect(
+      screen.getByDisplayValue("Needed a slower setup before unracking."),
     ).toBeTruthy();
   });
 

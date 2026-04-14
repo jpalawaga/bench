@@ -58,8 +58,8 @@ This is the main execution screen during a workout. It combines timing, set entr
 Each pane contains:
 
 - exercise name
-- `Notes >` button for exercise guidance notes
-- optional exercise-guidance popover
+- `Notes` button with a rotating trailing chevron for exercise guidance notes
+- optional inline exercise-guidance disclosure below the heading
 - set entry table
 - `Working Notes` section below the sets
 - `+ Add Set`
@@ -70,26 +70,27 @@ Each pane contains:
 ### Modes
 
 - `hidden`
-- `view`
-- `edit`
+- `expanded`
 
 ### Open rules
 
-- if the current exercise already has guidance notes, tapping the notes button opens `view`
-- if it has no guidance notes, tapping opens a lightweight empty state
-- tapping the button again while open dismisses the popover
+- tapping the notes button expands an inline disclosure directly below the exercise heading
+- if the current exercise already has guidance notes, the disclosure shows the note text
+- if it has no guidance notes, the disclosure shows a lightweight empty state
+- tapping the button again while open collapses the disclosure
+- the trailing chevron rotates downward while the disclosure is open
+- the disclosure body animates down into place instead of using a popover shell
 
 ### View mode
 
 - shows note text
 - auto-links raw `http`, `https`, and `www.` URLs
-- offers a dismiss action
 - if no guidance note exists, shows muted copy explaining that guidance is edited on the exercise detail screen
 
 ### Seen-state behavior
 
 - exercises with note text show a small unread dot until their notes are opened once during the current visit to this screen
-- switching exercises hides the popover
+- switching exercises hides the disclosure
 
 ## Set Table
 
@@ -137,12 +138,12 @@ Each pane contains:
 - positioned below the sets for the current exercise
 - section heading: `Working Notes`
 - grey, low-emphasis `+ Add Note` action aligned to the right
-- tapping the action reveals a lightly padded, lightly styled textarea
+- tapping the action reveals a lightly padded, lightly styled textarea and focuses it immediately
 - the textarea is for session-specific notes on that exercise instance only
 - if the current exercise already has a working note, the textarea is already visible
 - if there is no current working note and no historical note context, show muted empty-state text such as `_There are no notes_.`
 - show the last two historical working notes for the same exercise below the section in compact muted styling
-- working notes are distinct from the exercise-level guidance surfaced by `Notes >`
+- working notes are distinct from the exercise-level guidance surfaced by the `Notes` disclosure
 
 ## Numeric Input Interaction Contract
 
