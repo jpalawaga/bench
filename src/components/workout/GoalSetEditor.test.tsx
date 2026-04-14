@@ -23,10 +23,17 @@ function createSet(setNumber: number): EditableSetGoal {
 }
 
 function renumber(sets: EditableSetGoal[]): EditableSetGoal[] {
-  return sets.map((set, index) => ({
-    ...set,
-    setNumber: index + 1,
-  }));
+  let nextSetNumber = 1;
+
+  return sets.map((set) => {
+    const renumberedSet = {
+      ...set,
+      setNumber: nextSetNumber,
+    };
+
+    nextSetNumber += Math.max(1, set.goal.amount ?? 1);
+    return renumberedSet;
+  });
 }
 
 function GoalSetEditorHarness() {
@@ -49,34 +56,56 @@ function GoalSetEditorHarness() {
           ),
         )
       }
+      onAmountChange={(index, amount) =>
+        setSets((prev) =>
+          renumber(
+            prev.map((set, i) =>
+              i === index
+                ? { ...set, goal: { ...set.goal, amount } }
+                : set,
+            ),
+          ),
+        )
+      }
       onRemoveSet={(index) =>
         setSets((prev) => renumber(prev.filter((_, i) => i !== index)))
       }
       onAddSet={() =>
-        setSets((prev) => [...prev, createSet(prev.length + 1)])
+        setSets((prev) =>
+          renumber([...prev, createSet(prev.length + 1)])
+        )
       }
     />
   );
 }
 
 describe("GoalSetEditor", () => {
-  it("uses explicit add and remove controls instead of a set-count selector", () => {
+  it("supports grouped set counts alongside explicit add and remove controls", () => {
     render(<GoalSetEditorHarness />);
 
-    expect(screen.queryByRole("combobox")).toBeNull();
+    const amountSelect = screen.getByRole("combobox", {
+      name: /Set count for S1/i,
+    });
+
+    expect(amountSelect).toBeTruthy();
     expect(screen.getByLabelText("Add Set")).toBeTruthy();
     expect(screen.getByText("S1")).toBeTruthy();
     expect(screen.queryByLabelText("Remove set 1")).toBeNull();
 
+    fireEvent.change(amountSelect, { target: { value: "3" } });
+
+    expect(screen.getByText("S1-3")).toBeTruthy();
+    expect(screen.queryByLabelText("Remove set 1")).toBeNull();
+
     fireEvent.click(screen.getByLabelText("Add Set"));
 
-    expect(screen.getByText("S2")).toBeTruthy();
+    expect(screen.getByText("S4")).toBeTruthy();
     expect(screen.getByLabelText("Remove set 1")).toBeTruthy();
-    expect(screen.getByLabelText("Remove set 2")).toBeTruthy();
+    expect(screen.getByLabelText("Remove set 4")).toBeTruthy();
 
-    fireEvent.click(screen.getByLabelText("Remove set 2"));
+    fireEvent.click(screen.getByLabelText("Remove set 4"));
 
-    expect(screen.queryByText("S2")).toBeNull();
+    expect(screen.queryByText("S4")).toBeNull();
     expect(screen.queryByLabelText("Remove set 1")).toBeNull();
   });
 
@@ -108,6 +137,7 @@ describe("GoalSetEditor", () => {
         ]}
         onRepsChange={() => {}}
         onWeightChange={() => {}}
+        onAmountChange={() => {}}
         onRemoveSet={() => {}}
         onAddSet={() => {}}
       />,
@@ -117,7 +147,7 @@ describe("GoalSetEditor", () => {
     expect(screen.getByLabelText("Remove set 1")).toBeTruthy();
     expect(screen.getByLabelText("Remove set 2")).toBeTruthy();
     expect(screen.getByTestId("set-row-1").className).toContain(
-      "grid-cols-[1.9rem_auto_minmax(0,1fr)_auto]",
+      "grid-cols-[3.2rem_minmax(0,1fr)_auto_auto]",
     );
     expect(screen.getByTestId("set-row-inputs-1").className).not.toContain(
       "flex-wrap",

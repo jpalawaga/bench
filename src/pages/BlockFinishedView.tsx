@@ -7,8 +7,9 @@ import {
 import { useWorkoutStore } from "@/stores/workoutStore";
 import {
   exerciseSetsToGoals,
-  expandSetGoals,
   generateId,
+  getSetAmount,
+  groupConsecutiveSetGoals,
 } from "@/lib/utils";
 import type { SetGoal } from "@/types/models";
 
@@ -21,7 +22,7 @@ function createEditableSetGoal(
     setNumber,
     goal: {
       ...goal,
-      amount: 1,
+      amount: getSetAmount(goal),
       isProposed: false,
       proposalSource: undefined,
     },
@@ -29,18 +30,32 @@ function createEditableSetGoal(
 }
 
 function createEditableSetGoals(goals: SetGoal[]): EditableSetGoal[] {
-  return expandSetGoals(goals).map((goal, index) =>
-    createEditableSetGoal(goal, index + 1),
+  return renumberEditableSetGoals(
+    groupConsecutiveSetGoals(goals).map((goal) =>
+      createEditableSetGoal(goal, 0),
+    ),
   );
 }
 
 function renumberEditableSetGoals(
   sets: EditableSetGoal[],
 ): EditableSetGoal[] {
-  return sets.map((set, index) => ({
-    ...set,
-    setNumber: index + 1,
-  }));
+  let nextSetNumber = 1;
+
+  return sets.map((set) => {
+    const amount = getSetAmount(set.goal);
+    const renumberedSet = {
+      ...set,
+      setNumber: nextSetNumber,
+      goal: {
+        ...set.goal,
+        amount,
+      },
+    };
+
+    nextSetNumber += amount;
+    return renumberedSet;
+  });
 }
 
 export function BlockFinishedView() {
@@ -124,23 +139,25 @@ function NextSessionPrompt({
 
   const updateTarget = (
     index: number,
-    field: "reps" | "weight",
+    field: "reps" | "weight" | "amount",
     value: number,
   ) => {
     setTargets((prev) =>
-      prev.map((target, i) =>
-        i === index
-          ? {
-              ...target,
-              goal: {
-                ...target.goal,
-                [field]: value,
-                amount: 1,
-                isProposed: false,
-                proposalSource: undefined,
-              },
-            }
-          : target,
+      renumberEditableSetGoals(
+        prev.map((target, i) =>
+          i === index
+            ? {
+                ...target,
+                goal: {
+                  ...target.goal,
+                  [field]:
+                    field === "amount" ? Math.max(1, value) : value,
+                  isProposed: false,
+                  proposalSource: undefined,
+                },
+              }
+            : target,
+        ),
       ),
     );
   };
@@ -148,20 +165,22 @@ function NextSessionPrompt({
   const addTarget = () => {
     const lastTarget = targets[targets.length - 1];
 
-    setTargets((prev) => [
-      ...prev,
-      createEditableSetGoal(
-        lastTarget
-          ? {
-              ...lastTarget.goal,
-              amount: 1,
-              isProposed: false,
-              proposalSource: undefined,
-            }
-          : { reps: 0, weight: 0, amount: 1, isProposed: false },
-        prev.length + 1,
-      ),
-    ]);
+    setTargets((prev) =>
+      renumberEditableSetGoals([
+        ...prev,
+        createEditableSetGoal(
+          lastTarget
+            ? {
+                ...lastTarget.goal,
+                amount: 1,
+                isProposed: false,
+                proposalSource: undefined,
+              }
+            : { reps: 0, weight: 0, amount: 1, isProposed: false },
+          0,
+        ),
+      ]),
+    );
   };
 
   const removeTarget = (index: number) => {
@@ -172,12 +191,14 @@ function NextSessionPrompt({
 
   const handleSave = () => {
     onSave(
-      targets.map((target) => ({
-        ...target.goal,
-        amount: 1,
-        isProposed: false,
-        proposalSource: undefined,
-      })),
+      groupConsecutiveSetGoals(
+        targets.map((target) => ({
+          ...target.goal,
+          amount: getSetAmount(target.goal),
+          isProposed: false,
+          proposalSource: undefined,
+        })),
+      ),
     );
     setExpanded(false);
   };
@@ -186,11 +207,14 @@ function NextSessionPrompt({
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="w-full rounded-xl bg-surface-raised p-4 text-left transition-colors active:bg-surface-overlay"
+        className="w-full rounded-lg bg-surface-overlay/16 px-3.5 py-3 text-left transition-colors active:bg-surface-overlay/26"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="font-medium text-text-primary">{exerciseName}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+              For Next Time
+            </p>
+            <p className="mt-1 font-medium text-text-primary">{exerciseName}</p>
             <div
               className={`mt-1 flex items-center gap-2 text-sm ${
                 hasSavedTargets ? "text-green-400" : "text-text-muted"
@@ -235,18 +259,24 @@ function NextSessionPrompt({
   }
 
   return (
-    <div className="rounded-xl bg-surface-raised p-4">
-      <p className="text-text-primary font-medium mb-3">
-        {exerciseName} — Next Time
+    <div className="rounded-lg bg-surface-overlay/16 px-3.5 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+        For Next Time
+      </p>
+      <p className="mt-1 text-sm font-medium text-text-primary">
+        {exerciseName}
       </p>
       <GoalSetEditor
         sets={targets}
         onRepsChange={(index, reps) => updateTarget(index, "reps", reps)}
         onWeightChange={(index, weight) => updateTarget(index, "weight", weight)}
+        onAmountChange={(index, amount) =>
+          updateTarget(index, "amount", amount)
+        }
         onRemoveSet={removeTarget}
         onAddSet={addTarget}
       />
-      <div className="flex gap-2 mt-3">
+      <div className="mt-2.5 flex gap-2">
         <Button
           variant="secondary"
           className="flex-1"

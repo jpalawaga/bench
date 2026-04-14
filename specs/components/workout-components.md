@@ -106,15 +106,16 @@ Shared explicit-row editor used in both:
 
 ### Contents
 
-- one editable row per set
+- one editable row per grouped set goal
+- per-row grouped-count dropdown
 - add-set action below the list
 - remove-set actions on each row when more than one row exists
 
 ### Interaction contract
 
-- set count changes only through add/remove row actions
-- set numbers are derived labels and are not directly editable
-- adding a row duplicates the previous row values and clears proposal metadata
+- grouped count can change through the per-row amount dropdown as well as add/remove row actions
+- set labels are derived from cumulative set order and may render a range like `S1-3`
+- adding a row duplicates the previous row's reps and weight while resetting the new row's amount to `1` and clearing proposal metadata
 - proposal badges and remove actions must remain visible on narrow screens; they cannot be pushed off-screen by the row inputs
 - rows should remain compact enough to stay on one line on narrow phones, using reduced badge chrome and tighter input spacing rather than wrapping the set editor into multiple lines
 - when a proposal badge is present, it sits centered in the remaining space between the numeric inputs and the remove action rather than hugging the trailing edge
@@ -149,6 +150,7 @@ Reusable explicit goal row for shared set-goal editing.
 - set label
 - reps input
 - weight input
+- grouped-count dropdown
 - proposal badge
 - optional remove button
 

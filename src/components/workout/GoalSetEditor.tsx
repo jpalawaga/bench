@@ -11,6 +11,7 @@ interface GoalSetEditorProps {
   sets: EditableSetGoal[];
   onRepsChange: (index: number, reps: number) => void;
   onWeightChange: (index: number, weight: number) => void;
+  onAmountChange: (index: number, amount: number) => void;
   onRemoveSet: (index: number) => void;
   onAddSet: () => void;
 }
@@ -19,6 +20,7 @@ export function GoalSetEditor({
   sets,
   onRepsChange,
   onWeightChange,
+  onAmountChange,
   onRemoveSet,
   onAddSet,
 }: GoalSetEditorProps) {
@@ -32,6 +34,7 @@ export function GoalSetEditor({
             setNumber={set.setNumber}
             onRepsChange={(reps) => onRepsChange(index, reps)}
             onWeightChange={(weight) => onWeightChange(index, weight)}
+            onAmountChange={(amount) => onAmountChange(index, amount)}
             onRemove={() => onRemoveSet(index)}
             canRemove={sets.length > 1}
           />

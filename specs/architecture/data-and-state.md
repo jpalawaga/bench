@@ -169,7 +169,7 @@ Consecutive sets with the same reps, weight, proposal state, and proposal source
 
 ### Goal-row expansion
 
-When grouped `SetGoal` values are loaded into an editing flow, the UI expands them into explicit one-row-per-set entries. Users change set count by adding or removing rows, not by editing `amount` directly.
+When grouped `SetGoal` values are loaded into the goal-planning editors, the UI keeps them grouped as one editable row with an `amount` selector. Locking in a new block expands grouped rows into individual `ExerciseSet` records with `amount = 1`, while next-session targets can remain grouped in storage.
 
 ### Suggested-set precedence
 

@@ -64,6 +64,7 @@ Proposed rows preserve a source label:
 - `previous` when loaded from last actuals
 
 The UI uses that source to change the badge text and color.
+Consecutive identical suggested sets stay grouped through the planning editor by increasing `amount` rather than expanding into repeated visible rows.
 
 ## Working Note History
 

@@ -6,7 +6,12 @@ import {
 } from "@/components/workout/GoalSetEditor";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { repository } from "@/db/repository";
-import { expandSetGoals, generateId } from "@/lib/utils";
+import {
+  expandSetGoals,
+  generateId,
+  getSetAmount,
+  groupConsecutiveSetGoals,
+} from "@/lib/utils";
 import type { BlockExercise, SetGoal } from "@/types/models";
 
 function createEditableSetGoal(
@@ -18,7 +23,7 @@ function createEditableSetGoal(
     setNumber,
     goal: {
       ...goal,
-      amount: 1,
+      amount: getSetAmount(goal),
     },
   };
 }
@@ -26,15 +31,29 @@ function createEditableSetGoal(
 function renumberEditableSetGoals(
   sets: EditableSetGoal[],
 ): EditableSetGoal[] {
-  return sets.map((set, index) => ({
-    ...set,
-    setNumber: index + 1,
-  }));
+  let nextSetNumber = 1;
+
+  return sets.map((set) => {
+    const amount = getSetAmount(set.goal);
+    const renumberedSet = {
+      ...set,
+      setNumber: nextSetNumber,
+      goal: {
+        ...set.goal,
+        amount,
+      },
+    };
+
+    nextSetNumber += amount;
+    return renumberedSet;
+  });
 }
 
 function toEditableSetGoals(goals: SetGoal[]): EditableSetGoal[] {
-  return expandSetGoals(goals).map((goal, index) =>
-    createEditableSetGoal(goal, index + 1),
+  return renumberEditableSetGoals(
+    groupConsecutiveSetGoals(goals).map((goal) =>
+      createEditableSetGoal(goal, 0),
+    ),
   );
 }
 
@@ -58,7 +77,6 @@ export function GoalSettingView() {
           toEditableSetGoals(
             targets.map((target) => ({
               ...target,
-              amount: 1,
               isProposed: true,
               proposalSource: "planned",
             })),
@@ -72,13 +90,15 @@ export function GoalSettingView() {
       if (lastActuals && lastActuals.length > 0) {
         setSets(
           toEditableSetGoals(
-            lastActuals.map((s) => ({
-              reps: s.actual.reps ?? s.goal.reps,
-              weight: s.actual.weight ?? s.goal.weight,
-              amount: 1,
-              isProposed: true,
-              proposalSource: "previous",
-            })),
+            groupConsecutiveSetGoals(
+              lastActuals.map((s) => ({
+                reps: s.actual.reps ?? s.goal.reps,
+                weight: s.actual.weight ?? s.goal.weight,
+                amount: 1,
+                isProposed: true,
+                proposalSource: "previous",
+              })),
+            ),
           ),
         );
         setLoaded(true);
@@ -89,7 +109,7 @@ export function GoalSettingView() {
       setSets([
         createEditableSetGoal(
           { reps: 0, weight: 0, amount: 1, isProposed: false },
-          1,
+          0,
         ),
       ]);
       setLoaded(true);
@@ -100,43 +120,47 @@ export function GoalSettingView() {
 
   const updateSetGoal = (
     index: number,
-    field: keyof Pick<SetGoal, "reps" | "weight">,
+    field: keyof Pick<SetGoal, "reps" | "weight" | "amount">,
     value: number,
   ) => {
     setSets((prev) =>
-      prev.map((s, i) =>
-        i === index
-          ? {
-              ...s,
-              goal: {
-                ...s.goal,
-                [field]: value,
-                amount: 1,
-                isProposed: false,
-                proposalSource: undefined,
-              },
-            }
-          : s,
+      renumberEditableSetGoals(
+        prev.map((s, i) =>
+          i === index
+            ? {
+                ...s,
+                goal: {
+                  ...s.goal,
+                  [field]:
+                    field === "amount" ? Math.max(1, value) : value,
+                  isProposed: false,
+                  proposalSource: undefined,
+                },
+              }
+            : s,
+        ),
       ),
     );
   };
 
   const addSet = () => {
     const lastSet = sets[sets.length - 1];
-    setSets((prev) => [
-      ...prev,
-      createEditableSetGoal(
-        lastSet
-          ? {
-              ...lastSet.goal,
-              amount: 1,
-              isProposed: false,
-              proposalSource: undefined,
-            }
-          : { reps: 0, weight: 0, amount: 1, isProposed: false },
-        prev.length + 1,
-      ),
-    ]);
+    setSets((prev) =>
+      renumberEditableSetGoals([
+        ...prev,
+        createEditableSetGoal(
+          lastSet
+            ? {
+                ...lastSet.goal,
+                amount: 1,
+                isProposed: false,
+                proposalSource: undefined,
+              }
+            : { reps: 0, weight: 0, amount: 1, isProposed: false },
+          0,
+        ),
+      ]),
+    );
   };
 
   const removeSet = (index: number) => {
@@ -145,13 +169,16 @@ export function GoalSettingView() {
 
   const handleLockIn = () => {
     if (!pendingExerciseId || !pendingExerciseName) return;
-    const finalizedSets = sets.map((set, index) => ({
+    const finalizedGoals = expandSetGoals(
+      sets.map((set) => ({
+        ...set.goal,
+        amount: getSetAmount(set.goal),
+      })),
+    );
+    const finalizedSets = finalizedGoals.map((goal, index) => ({
         id: generateId(),
         setNumber: index + 1,
-        goal: {
-          ...set.goal,
-          amount: 1,
-        },
+        goal: { ...goal, amount: 1 },
         actual: { reps: null, weight: null },
     }));
     const exercise: BlockExercise = {
@@ -183,6 +210,9 @@ export function GoalSettingView() {
         onRepsChange={(index, reps) => updateSetGoal(index, "reps", reps)}
         onWeightChange={(index, weight) =>
           updateSetGoal(index, "weight", weight)
+        }
+        onAmountChange={(index, amount) =>
+          updateSetGoal(index, "amount", amount)
         }
         onRemoveSet={removeSet}
         onAddSet={addSet}

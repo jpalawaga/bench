@@ -19,15 +19,18 @@ Each exercise starts collapsed.
 
 ### Collapsed state
 
+- muted `For Next Time` eyebrow
 - exercise name
 - status text:
   - `Targets set` if saved targets already exist
   - `Set optional targets` otherwise
 - chevron affordance
+- subdued low-contrast surface instead of a heavy raised card
 
 ### Expanded state
 
-- editable rows for reps and weight
+- muted `For Next Time` eyebrow and exercise name
+- editable rows for reps, weight, and grouped count
 - `+ Add Set` action
 - per-row remove buttons when more than one row exists
 - shared goal rows stay compact on narrow phones instead of wrapping into stacked multi-line rows
@@ -42,11 +45,11 @@ The editable targets follow this precedence:
 1. existing saved `nextSessionTargets`, if present
 2. otherwise the sets just performed in the block
 
-Grouped legacy targets are expanded into one row per set before rendering. Set count is controlled only by adding or removing rows.
+Consecutive identical targets or performed sets are grouped into one editable row with an `amount` count. Set count can change either through the per-row amount dropdown or by adding and removing rows.
 
 ## Save Behavior
 
-- saving writes the edited target rows to `BlockExercise.nextSessionTargets`
+- saving writes the edited grouped target rows to `BlockExercise.nextSessionTargets`, preserving `amount` values greater than `1`
 - the prompt collapses after save
 - the collapsed card shows the success state
 
@@ -68,7 +71,7 @@ Targets are optional. The user can ignore them and continue.
 ## Reimplementation Notes
 
 - this screen is not just confirmation; it is the only place the user can explicitly author next-session targets after finishing a block
-- the expanded editor is shared with the pre-block goal-setting flow so both screens use the same row model
+- the expanded editor is shared with the pre-block goal-setting flow so both screens use the same grouped-count row model
 
 ## Related Docs
 

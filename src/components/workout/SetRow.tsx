@@ -1,4 +1,5 @@
 import type { SetGoal } from "@/types/models";
+import { getSetAmount } from "@/lib/utils";
 import { WorkoutNumberInput } from "./WorkoutNumberInput";
 
 function getProposalLabel(goal: SetGoal): string | null {
@@ -21,6 +22,7 @@ interface SetRowProps {
   setNumber: number;
   onRepsChange: (reps: number) => void;
   onWeightChange: (weight: number) => void;
+  onAmountChange: (amount: number) => void;
   onRemove: () => void;
   canRemove: boolean;
 }
@@ -30,18 +32,26 @@ export function SetRow({
   setNumber,
   onRepsChange,
   onWeightChange,
+  onAmountChange,
   onRemove,
   canRemove,
 }: SetRowProps) {
   const proposalLabel = getProposalLabel(goal);
+  const amount = getSetAmount(goal);
+  const setLabel =
+    amount > 1 ? `S${setNumber}-${setNumber + amount - 1}` : `S${setNumber}`;
+  const amountOptions = Array.from(
+    { length: Math.max(10, amount) },
+    (_, index) => index + 1,
+  );
 
   return (
     <div
       data-testid={`set-row-${setNumber}`}
-      className="grid grid-cols-[1.9rem_auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-surface-overlay/25 px-2.5 py-2"
+      className="grid grid-cols-[3.2rem_minmax(0,1fr)_auto_auto] items-center gap-2 rounded-lg bg-surface-overlay/18 px-2.5 py-1.5"
     >
-      <span className="w-7 shrink-0 text-[13px] font-medium text-text-muted">
-        S{setNumber}
+      <span className="w-12 shrink-0 text-[13px] font-medium text-text-muted">
+        {setLabel}
       </span>
 
       <div
@@ -54,7 +64,7 @@ export function SetRow({
           placeholder="Reps"
           min={0}
           className={`
-            h-8 w-[3.2rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
+            h-8 w-[3rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
             placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
           `}
         />
@@ -64,13 +74,42 @@ export function SetRow({
           onChange={(value) => onWeightChange(value ?? 0)}
           placeholder="lbs"
           className={`
-            h-8 w-[4rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
+            h-8 w-[3.7rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
             placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
           `}
         />
         <span className="text-text-muted text-[11px] uppercase tracking-[0.06em]">
           lbs
         </span>
+        <span className="text-text-muted text-xs">x</span>
+        <div className="relative shrink-0">
+          <select
+            value={amount}
+            onChange={(event) => onAmountChange(Number(event.target.value))}
+            aria-label={`Set count for ${setLabel}`}
+            className="h-8 w-[3.2rem] appearance-none rounded-md bg-surface-overlay/70 px-2 pr-6 text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
+          >
+            {amountOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <svg
+            aria-hidden="true"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-muted"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
       </div>
 
       <div
