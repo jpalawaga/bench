@@ -80,11 +80,13 @@ Each pane contains:
 - tapping the button again while open collapses the disclosure
 - the trailing chevron rotates downward while the disclosure is open
 - the disclosure body animates down into place instead of using a popover shell
+- the disclosure sits tight under the heading instead of reading like a separate card
 
 ### View mode
 
 - shows note text
 - auto-links raw `http`, `https`, and `www.` URLs
+- uses compact padding and a subdued surface without a strong border
 - if no guidance note exists, shows muted copy explaining that guidance is edited on the exercise detail screen
 
 ### Seen-state behavior
@@ -139,6 +141,7 @@ Each pane contains:
 - section heading: `Working Notes`
 - grey, low-emphasis `+ Add Note` action aligned to the right
 - tapping the action reveals a lightly padded, lightly styled textarea and focuses it immediately
+- the surrounding note area uses subdued container styling rather than a strong bordered card
 - the textarea is for session-specific notes on that exercise instance only
 - if the current exercise already has a working note, the textarea is already visible
 - if there is no current working note and no historical note context, show muted empty-state text such as `_There are no notes_.`

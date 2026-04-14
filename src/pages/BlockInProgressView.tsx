@@ -278,64 +278,70 @@ export function BlockInProgressView() {
           !isVisibleExercise ? "pointer-events-none" : ""
         }`}
       >
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-          <h2 className="min-w-0 break-words text-lg font-bold text-text-primary">
-            {exercise.exerciseName}
-          </h2>
-          <button
-            onClick={isVisibleExercise ? handleNotesButtonClick : undefined}
-            disabled={!isVisibleExercise}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[13px] font-semibold leading-none transition-colors ${paneNotesButtonClassName}`}
-            aria-expanded={isGuidanceNotesOpen}
-            aria-controls={`exercise-guidance-${exercise.exerciseId}`}
-          >
-            {isVisibleExercise && hasExerciseNotes && !hasSeenNotes && (
-              <span className="h-1 w-1 rounded-full bg-orange-400" />
-            )}
-            <span>Notes</span>
-            <span
-              aria-hidden="true"
-              className={`inline-block transition-transform duration-200 ease-out motion-reduce:transition-none ${
-                isGuidanceNotesOpen ? "rotate-90" : ""
-              }`}
+        <div
+          className={`flex min-w-0 flex-col ${
+            isGuidanceNotesOpen ? "gap-1" : "gap-0"
+          }`}
+        >
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+            <h2 className="min-w-0 break-words text-lg font-bold text-text-primary">
+              {exercise.exerciseName}
+            </h2>
+            <button
+              onClick={isVisibleExercise ? handleNotesButtonClick : undefined}
+              disabled={!isVisibleExercise}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[13px] font-semibold leading-none transition-colors ${paneNotesButtonClassName}`}
+              aria-expanded={isGuidanceNotesOpen}
+              aria-controls={`exercise-guidance-${exercise.exerciseId}`}
             >
-              &gt;
-            </span>
-          </button>
-        </div>
-
-        {isVisibleExercise && (
-          <div
-            id={`exercise-guidance-${exercise.exerciseId}`}
-            aria-hidden={!isGuidanceNotesOpen}
-            className="grid min-w-0 max-w-full transition-all duration-200 ease-out motion-reduce:transition-none"
-            style={{
-              gridTemplateRows: isGuidanceNotesOpen ? "1fr" : "0fr",
-              opacity: isGuidanceNotesOpen ? 1 : 0,
-            }}
-          >
-            <div className="overflow-hidden">
-              <div
-                className={`pt-1 transition-transform duration-200 ease-out motion-reduce:transition-none ${
-                  isGuidanceNotesOpen ? "translate-y-0" : "-translate-y-1"
+              {isVisibleExercise && hasExerciseNotes && !hasSeenNotes && (
+                <span className="h-1 w-1 rounded-full bg-orange-400" />
+              )}
+              <span>Notes</span>
+              <span
+                aria-hidden="true"
+                className={`inline-block transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                  isGuidanceNotesOpen ? "rotate-90" : ""
                 }`}
               >
-                <div className="w-full min-w-0 max-w-full rounded-2xl border border-border bg-surface-raised/70 px-4 py-3 sm:max-w-[22rem]">
-                  {paneExerciseFormNotes ? (
-                    <p className="min-w-0 break-words text-sm leading-6 text-text-secondary">
-                      <LinkedText text={paneExerciseFormNotes} />
-                    </p>
-                  ) : (
-                    <p className="text-sm leading-6 text-text-muted">
-                      No exercise guidance yet. Edit this exercise in the library
-                      to add form cues and reminders.
-                    </p>
-                  )}
+                &gt;
+              </span>
+            </button>
+          </div>
+
+          {isVisibleExercise && (
+            <div
+              id={`exercise-guidance-${exercise.exerciseId}`}
+              aria-hidden={!isGuidanceNotesOpen}
+              className="grid min-w-0 max-w-full transition-all duration-200 ease-out motion-reduce:transition-none"
+              style={{
+                gridTemplateRows: isGuidanceNotesOpen ? "1fr" : "0fr",
+                opacity: isGuidanceNotesOpen ? 1 : 0,
+              }}
+            >
+              <div className="overflow-hidden">
+                <div
+                  className={`transition-transform duration-200 ease-out motion-reduce:transition-none ${
+                    isGuidanceNotesOpen ? "translate-y-0" : "-translate-y-1"
+                  }`}
+                >
+                  <div className="w-full min-w-0 max-w-full rounded-xl bg-surface-overlay/30 px-3 py-2.5 sm:max-w-[21rem]">
+                    {paneExerciseFormNotes ? (
+                      <p className="min-w-0 break-words text-sm leading-5 text-text-secondary">
+                        <LinkedText text={paneExerciseFormNotes} />
+                      </p>
+                    ) : (
+                      <p className="text-sm leading-5 text-text-muted">
+                        No exercise guidance yet. Edit this exercise in the library
+                        to add form cues and reminders.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs text-text-muted">
@@ -475,7 +481,7 @@ export function BlockInProgressView() {
           + Add Set
         </button>
 
-        <div className="rounded-2xl border border-border bg-surface-raised/70 px-4 py-3">
+        <div className="rounded-xl bg-surface-overlay/25 px-3.5 py-2.5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">
               Working Notes
@@ -522,30 +528,30 @@ export function BlockInProgressView() {
               aria-label={`${exercise.exerciseName} working note`}
               placeholder="Pain, failed-rep reason, equipment issue, setup change"
               rows={3}
-              className="mt-3 w-full resize-none rounded-lg bg-surface-overlay/45 px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/60 focus:outline-none"
+              className="mt-2.5 w-full resize-none rounded-xl bg-surface-overlay/40 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/55 focus:outline-none"
             />
           )}
 
           {showWorkingNotesEmptyState && (
-            <p className="mt-3 text-sm italic text-text-muted">
+            <p className="mt-2.5 text-sm italic text-text-muted">
               There are no notes.
             </p>
           )}
 
           {paneRecentNotes.length > 0 && (
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="mt-2.5 flex flex-col gap-1.5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-secondary">
                 Recent Notes
               </p>
               {paneRecentNotes.map((entry, index) => (
                 <div
                   key={`${entry.startedAt}-${index}`}
-                  className="rounded-xl border border-border bg-surface-overlay/30 p-3"
+                  className="rounded-lg bg-surface-overlay/20 px-3 py-2.5"
                 >
                   <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted">
                     {formatDateTime(entry.startedAt)}
                   </p>
-                  <p className="mt-2 text-sm text-text-muted">
+                  <p className="mt-1.5 text-sm text-text-muted">
                     <LinkedText text={entry.note} />
                   </p>
                 </div>

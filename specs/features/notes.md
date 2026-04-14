@@ -31,6 +31,7 @@ These are notes on the exercise as a whole, not on one specific session. They ar
 - it is not the main writing surface during a workout
 - the in-progress `Notes` disclosure is read-only reference material, not an editor
 - opening it expands an inline section below the exercise title and rotates the trailing chevron downward
+- the disclosure should feel compact and low-chrome rather than like a bordered callout card
 - if no guidance note exists, the `Notes` affordance should still open and explain that guidance can be added from the exercise detail screen
 
 ## 2. Working Notes
@@ -59,7 +60,7 @@ These are notes on a particular exercise within a specific workout session. They
 - section heading: `Working Notes`
 - right side of the heading: grey, low-emphasis `+ Add Note` action
 - tapping the action reveals a lightly styled, lightly padded textarea and immediately focuses it
-- the writing surface should feel secondary to set entry, not like a dominant card
+- the writing surface should feel secondary to set entry, using subdued container styling rather than a dominant framed card
 - if the current exercise already has a working note for this session, the textarea should already be visible when the pane opens
 
 ### Empty and history states
