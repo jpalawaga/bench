@@ -116,6 +116,7 @@ Shared explicit-row editor used in both:
 - set numbers are derived labels and are not directly editable
 - adding a row duplicates the previous row values and clears proposal metadata
 - proposal badges and remove actions must remain visible on narrow screens; they cannot be pushed off-screen by the row inputs
+- rows should remain compact enough to stay on one line on narrow phones, using reduced badge chrome and tighter input spacing rather than wrapping the set editor into multiple lines
 
 ## WorkoutNumberInput
 
@@ -154,6 +155,7 @@ Reusable explicit goal row for shared set-goal editing.
 
 - `PLANNED` for saved targets
 - `PREV` for last actuals
+- proposal pills are intentionally compact, low-height labels so they do not force row wrapping on mobile
 
 ## Page-Local Workout UI That May Become Components Later
 

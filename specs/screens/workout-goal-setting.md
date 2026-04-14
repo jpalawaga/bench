@@ -20,6 +20,7 @@ Each row contains:
 - weight numeric input
 - optional proposal badge
 - optional remove button when more than one row exists
+- the row stays compact on narrow phones; badge and control sizing should tighten before the row is allowed to wrap
 
 Set numbers are derived from row order and cannot be edited directly.
 

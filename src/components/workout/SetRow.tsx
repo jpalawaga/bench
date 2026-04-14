@@ -36,15 +36,47 @@ export function SetRow({
   const proposalLabel = getProposalLabel(goal);
 
   return (
-    <div className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-2 gap-y-2">
-      <span className="w-8 shrink-0 text-sm text-text-muted">
+    <div
+      data-testid={`set-row-${setNumber}`}
+      className="grid grid-cols-[1.9rem_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-surface-overlay/25 px-2.5 py-2"
+    >
+      <span className="w-7 shrink-0 text-[13px] font-medium text-text-muted">
         S{setNumber}
       </span>
 
-      <div className="flex items-center justify-end gap-2">
+      <div
+        data-testid={`set-row-inputs-${setNumber}`}
+        className="flex min-w-0 items-center gap-1.5 whitespace-nowrap"
+      >
+        <WorkoutNumberInput
+          value={goal.reps || null}
+          onChange={(value) => onRepsChange(value ?? 0)}
+          placeholder="Reps"
+          min={0}
+          className={`
+            h-8 w-[3.2rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
+            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
+          `}
+        />
+        <span className="text-text-muted text-xs">x</span>
+        <WorkoutNumberInput
+          value={goal.weight || null}
+          onChange={(value) => onWeightChange(value ?? 0)}
+          placeholder="lbs"
+          className={`
+            h-8 w-[4rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
+            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
+          `}
+        />
+        <span className="text-text-muted text-[11px] uppercase tracking-[0.06em]">
+          lbs
+        </span>
+      </div>
+
+      <div className="flex items-center justify-end gap-1">
         {proposalLabel && (
           <span
-            className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold tracking-[0.14em] ${getProposalClasses(goal)}`}
+            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold leading-none tracking-[0.08em] ${getProposalClasses(goal)}`}
           >
             {proposalLabel}
           </span>
@@ -54,11 +86,11 @@ export function SetRow({
           <button
             onClick={onRemove}
             aria-label={`Remove set ${setNumber}`}
-            className="text-text-muted active:text-danger p-1 min-h-0 shrink-0"
+            className="rounded-full p-0.5 text-text-muted active:text-danger min-h-0 shrink-0"
           >
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -71,30 +103,6 @@ export function SetRow({
             </svg>
           </button>
         )}
-      </div>
-
-      <div className="col-span-2 flex flex-wrap items-center gap-1">
-        <WorkoutNumberInput
-          value={goal.reps || null}
-          onChange={(value) => onRepsChange(value ?? 0)}
-          placeholder="Reps"
-          min={0}
-          className={`
-            h-9 w-16 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary
-            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
-          `}
-        />
-        <span className="text-text-muted text-sm">x</span>
-        <WorkoutNumberInput
-          value={goal.weight || null}
-          onChange={(value) => onWeightChange(value ?? 0)}
-          placeholder="lbs"
-          className={`
-            h-9 w-20 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary
-            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
-          `}
-        />
-        <span className="text-text-muted text-sm">lbs</span>
       </div>
     </div>
   );

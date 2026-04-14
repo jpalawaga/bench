@@ -1,9 +1,13 @@
 // @vitest-environment happy-dom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { GoalSetEditor, type EditableSetGoal } from "./GoalSetEditor";
+
+afterEach(() => {
+  cleanup();
+});
 
 function createSet(setNumber: number): EditableSetGoal {
   return {
@@ -112,5 +116,11 @@ describe("GoalSetEditor", () => {
     expect(screen.getByText("PLANNED")).toBeTruthy();
     expect(screen.getByLabelText("Remove set 1")).toBeTruthy();
     expect(screen.getByLabelText("Remove set 2")).toBeTruthy();
+    expect(screen.getByTestId("set-row-1").className).toContain(
+      "grid-cols-[1.9rem_minmax(0,1fr)_auto]",
+    );
+    expect(screen.getByTestId("set-row-inputs-1").className).not.toContain(
+      "flex-wrap",
+    );
   });
 });

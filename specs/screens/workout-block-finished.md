@@ -30,6 +30,7 @@ Each exercise starts collapsed.
 - editable rows for reps and weight
 - `+ Add Set` action
 - per-row remove buttons when more than one row exists
+- shared goal rows stay compact on narrow phones instead of wrapping into stacked multi-line rows
 - `Close` button
 - `Save Targets` button
 

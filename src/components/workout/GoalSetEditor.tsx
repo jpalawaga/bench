@@ -24,7 +24,7 @@ export function GoalSetEditor({
 }: GoalSetEditorProps) {
   return (
     <>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {sets.map((set, index) => (
           <SetRow
             key={set.id}
