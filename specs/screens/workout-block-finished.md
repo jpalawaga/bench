@@ -27,7 +27,9 @@ Each exercise starts collapsed.
 
 ### Expanded state
 
-- editable rows for reps, weight, and amount
+- editable rows for reps and weight
+- `+ Add Set` action
+- per-row remove buttons when more than one row exists
 - `Close` button
 - `Save Targets` button
 
@@ -38,11 +40,11 @@ The editable targets follow this precedence:
 1. existing saved `nextSessionTargets`, if present
 2. otherwise the sets just performed in the block
 
-Both sources are normalized into grouped consecutive goal rows so repeated identical sets can be represented with `amount > 1`.
+Grouped legacy targets are expanded into one row per set before rendering. Set count is controlled only by adding or removing rows.
 
 ## Save Behavior
 
-- saving writes the grouped target rows to `BlockExercise.nextSessionTargets`
+- saving writes the edited target rows to `BlockExercise.nextSessionTargets`
 - the prompt collapses after save
 - the collapsed card shows the success state
 
@@ -63,8 +65,8 @@ Targets are optional. The user can ignore them and continue.
 
 ## Reimplementation Notes
 
-- this screen is not just confirmation; it is the only place the user can explicitly author grouped next-session targets
-- targets are stored without row ids because they are grouped planning data, not concrete logged sets
+- this screen is not just confirmation; it is the only place the user can explicitly author next-session targets after finishing a block
+- the expanded editor is shared with the pre-block goal-setting flow so both screens use the same row model
 
 ## Related Docs
 

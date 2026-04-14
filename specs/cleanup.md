@@ -8,7 +8,6 @@ This file documents areas where the current implementation has overlapping compo
 | --- | --- | --- | --- |
 | Modal shells | `Modal` and `BackupRestoreModal` both implement custom overlay, escape handling, and shell styling | duplicated modal behavior will drift | create one modal shell with size presets and slot content |
 | Page headers | log home, workout shell, exercise library, exercise detail, and workout detail all hand-roll similar headers | repeated back-button and spacing logic | extract a page header primitive with optional trailing action |
-| Numeric set rows | goal-setting rows, in-progress set rows, and block-finished target rows all render reps, weight, and amount variants | the same domain concept is implemented three different ways | define a shared set-row family with mode-specific props |
 | Card rows | `WorkoutListItem`, `BlockCard`, `ExerciseCard`, exercise library rows, and target prompt cards all share card-like summary layouts | repeated padding, typography, and press-state patterns | introduce one summary-card base style or component |
 
 ## Medium-Value Cleanup
@@ -18,6 +17,7 @@ This file documents areas where the current implementation has overlapping compo
 | Text inputs | `Input` exists, `SearchInput` is separate, and most textareas and text fields are inline | decide whether to keep fully custom fields or create a small shared field system |
 | Notes UI | workout notes, block notes, exercise notes, and recent-note cards all use similar content containers but slightly different markup | extract note card and note history presentation primitives |
 | Inline icon buttons | many screens repeat the same rounded icon-button treatment for back, delete, and utility actions | create a small icon-button primitive with semantic variants |
+| In-progress set rows | the shared `GoalSetEditor` now covers pre-block and next-session goal entry, but in-progress logging still has its own row layout | decide whether the actual-entry row family should share more structure with goal editing |
 
 ## Behavior-Level Cleanup
 

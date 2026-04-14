@@ -1,37 +1,68 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { SetRow } from "@/components/workout/SetRow";
+import {
+  GoalSetEditor,
+  type EditableSetGoal,
+} from "@/components/workout/GoalSetEditor";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { repository } from "@/db/repository";
-import {
-  generateId,
-  getSetAmount,
-  groupConsecutiveSetGoals,
-} from "@/lib/utils";
-import type { BlockExercise, ExerciseSet, SetGoal } from "@/types/models";
+import { expandSetGoals, generateId } from "@/lib/utils";
+import type { BlockExercise, SetGoal } from "@/types/models";
+
+function createEditableSetGoal(
+  goal: SetGoal,
+  setNumber: number,
+): EditableSetGoal {
+  return {
+    id: generateId(),
+    setNumber,
+    goal: {
+      ...goal,
+      amount: 1,
+    },
+  };
+}
+
+function renumberEditableSetGoals(
+  sets: EditableSetGoal[],
+): EditableSetGoal[] {
+  return sets.map((set, index) => ({
+    ...set,
+    setNumber: index + 1,
+  }));
+}
+
+function toEditableSetGoals(goals: SetGoal[]): EditableSetGoal[] {
+  return expandSetGoals(goals).map((goal, index) =>
+    createEditableSetGoal(goal, index + 1),
+  );
+}
 
 export function GoalSettingView() {
   const pendingExerciseId = useWorkoutStore((s) => s.pendingExerciseId);
   const pendingExerciseName = useWorkoutStore((s) => s.pendingExerciseName);
   const addExerciseToBlock = useWorkoutStore((s) => s.addExerciseToBlock);
 
-  const [sets, setSets] = useState<ExerciseSet[]>([]);
+  const [sets, setSets] = useState<EditableSetGoal[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!pendingExerciseId) return;
+    setLoaded(false);
 
     const load = async () => {
       // Check for next-session targets first, then fall back to last actuals
       const targets = await repository.getNextSessionTargets(pendingExerciseId);
       if (targets && targets.length > 0) {
         setSets(
-          groupConsecutiveSetGoals(targets).map((t, i) => ({
-            id: generateId(),
-            setNumber: i + 1,
-            goal: { ...t, isProposed: true, proposalSource: "planned" },
-            actual: { reps: null, weight: null },
-          })),
+          toEditableSetGoals(
+            targets.map((target) => ({
+              ...target,
+              amount: 1,
+              isProposed: true,
+              proposalSource: "planned",
+            })),
+          ),
         );
         setLoaded(true);
         return;
@@ -40,7 +71,7 @@ export function GoalSettingView() {
       const lastActuals = await repository.getLastActuals(pendingExerciseId);
       if (lastActuals && lastActuals.length > 0) {
         setSets(
-          groupConsecutiveSetGoals(
+          toEditableSetGoals(
             lastActuals.map((s) => ({
               reps: s.actual.reps ?? s.goal.reps,
               weight: s.actual.weight ?? s.goal.weight,
@@ -48,12 +79,7 @@ export function GoalSettingView() {
               isProposed: true,
               proposalSource: "previous",
             })),
-          ).map((s, i) => ({
-            id: generateId(),
-            setNumber: i + 1,
-            goal: s,
-            actual: { reps: null, weight: null },
-          })),
+          ),
         );
         setLoaded(true);
         return;
@@ -61,17 +87,15 @@ export function GoalSettingView() {
 
       // Default: one empty set
       setSets([
-        {
-          id: generateId(),
-          setNumber: 1,
-          goal: { reps: 0, weight: 0, amount: 1, isProposed: false },
-          actual: { reps: null, weight: null },
-        },
+        createEditableSetGoal(
+          { reps: 0, weight: 0, amount: 1, isProposed: false },
+          1,
+        ),
       ]);
       setLoaded(true);
     };
 
-    load();
+    void load();
   }, [pendingExerciseId]);
 
   const updateSetGoal = (
@@ -87,25 +111,7 @@ export function GoalSettingView() {
               goal: {
                 ...s.goal,
                 [field]: value,
-                amount: getSetAmount(s.goal),
-                isProposed: false,
-                proposalSource: undefined,
-              },
-            }
-          : s,
-      ),
-    );
-  };
-
-  const updateSetAmount = (index: number, amount: number) => {
-    setSets((prev) =>
-      prev.map((s, i) =>
-        i === index
-          ? {
-              ...s,
-              goal: {
-                ...s.goal,
-                amount,
+                amount: 1,
                 isProposed: false,
                 proposalSource: undefined,
               },
@@ -119,52 +125,40 @@ export function GoalSettingView() {
     const lastSet = sets[sets.length - 1];
     setSets((prev) => [
       ...prev,
-      {
-        id: generateId(),
-        setNumber: prev.length + 1,
-        goal: lastSet
+      createEditableSetGoal(
+        lastSet
           ? {
               ...lastSet.goal,
-              amount: getSetAmount(lastSet.goal),
+              amount: 1,
               isProposed: false,
               proposalSource: undefined,
             }
           : { reps: 0, weight: 0, amount: 1, isProposed: false },
-        actual: { reps: null, weight: null },
-      },
+        prev.length + 1,
+      ),
     ]);
   };
 
   const removeSet = (index: number) => {
-    setSets((prev) =>
-      prev
-        .filter((_, i) => i !== index)
-        .map((s, i) => ({ ...s, setNumber: i + 1 })),
-    );
+    setSets((prev) => renumberEditableSetGoals(prev.filter((_, i) => i !== index)));
   };
 
   const handleLockIn = () => {
     if (!pendingExerciseId || !pendingExerciseName) return;
-    const expandedSets = sets.flatMap((set) =>
-      Array.from({ length: getSetAmount(set.goal) }, (_, amountIndex) => ({
+    const finalizedSets = sets.map((set, index) => ({
         id: generateId(),
-        setNumber: amountIndex + 1,
+        setNumber: index + 1,
         goal: {
           ...set.goal,
           amount: 1,
         },
         actual: { reps: null, weight: null },
-      })),
-    );
-    const renumberedSets = expandedSets.map((set, index) => ({
-      ...set,
-      setNumber: index + 1,
     }));
     const exercise: BlockExercise = {
       id: generateId(),
       exerciseId: pendingExerciseId,
       exerciseName: pendingExerciseName,
-      sets: renumberedSets,
+      sets: finalizedSets,
       notes: "",
     };
     addExerciseToBlock(exercise);
@@ -184,26 +178,15 @@ export function GoalSettingView() {
         {pendingExerciseName}
       </h2>
 
-      <div className="flex flex-col gap-3">
-        {sets.map((s, i) => (
-          <SetRow
-            key={s.id}
-            set={s}
-            onRepsChange={(reps) => updateSetGoal(i, "reps", reps)}
-            onWeightChange={(weight) => updateSetGoal(i, "weight", weight)}
-            onAmountChange={(amount) => updateSetAmount(i, amount)}
-            onRemove={() => removeSet(i)}
-            canRemove={sets.length > 1}
-          />
-        ))}
-      </div>
-
-      <button
-        onClick={addSet}
-        className="text-accent text-sm font-medium py-2 active:opacity-70"
-      >
-        + Add Set
-      </button>
+      <GoalSetEditor
+        sets={sets}
+        onRepsChange={(index, reps) => updateSetGoal(index, "reps", reps)}
+        onWeightChange={(index, weight) =>
+          updateSetGoal(index, "weight", weight)
+        }
+        onRemoveSet={removeSet}
+        onAddSet={addSet}
+      />
 
       <div className="mt-auto pb-6">
         <Button fullWidth onClick={handleLockIn}>

@@ -61,6 +61,17 @@ export function normalizeSetGoal(goal: SetGoal): SetGoal {
   };
 }
 
+export function expandSetGoals(goals: SetGoal[]): SetGoal[] {
+  return goals.flatMap((rawGoal) => {
+    const goal = normalizeSetGoal(rawGoal);
+
+    return Array.from({ length: getSetAmount(goal) }, () => ({
+      ...goal,
+      amount: 1,
+    }));
+  });
+}
+
 export function groupConsecutiveSetGoals(goals: SetGoal[]): SetGoal[] {
   const grouped: SetGoal[] = [];
 
@@ -90,15 +101,19 @@ export function groupConsecutiveSetGoals(goals: SetGoal[]): SetGoal[] {
 
 export function groupExerciseSetsToGoals(sets: ExerciseSet[]): SetGoal[] {
   return groupConsecutiveSetGoals(
-    sets.map((set) => ({
-      ...set.goal,
-      reps: set.actual.reps ?? set.goal.reps,
-      weight: set.actual.weight ?? set.goal.weight,
-      amount: 1,
-      isProposed: false,
-      proposalSource: undefined,
-    })),
+    exerciseSetsToGoals(sets),
   );
+}
+
+export function exerciseSetsToGoals(sets: ExerciseSet[]): SetGoal[] {
+  return sets.map((set) => ({
+    ...set.goal,
+    reps: set.actual.reps ?? set.goal.reps,
+    weight: set.actual.weight ?? set.goal.weight,
+    amount: 1,
+    isProposed: false,
+    proposalSource: undefined,
+  }));
 }
 
 function formatSetToken(reps: number | null, weight: number | null): string {

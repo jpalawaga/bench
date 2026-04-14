@@ -7,7 +7,7 @@ This screen converts a selected exercise into a planned `BlockExercise` with one
 ## Layout
 
 - exercise name as the section heading
-- one editable row per planned set group
+- one editable row per planned set
 - `+ Add Set` text action
 - bottom `Lock In` button
 
@@ -18,11 +18,10 @@ Each row contains:
 - set label like `S1`
 - reps numeric input
 - weight numeric input
-- amount select from `x1` through `x8`
 - optional proposal badge
 - optional remove button when more than one row exists
 
-Rows represent grouped goals, not always one physical set. `amount` expands later.
+Set numbers are derived from row order and cannot be edited directly.
 
 ## Initialization Algorithm
 
@@ -37,24 +36,25 @@ Proposed rows are visually labeled:
 - `PLANNED` for saved next-session targets
 - `PREV` for last-actual suggestions
 
+If a saved target was stored with grouped count shorthand, it is expanded into one row per set before rendering.
+
 ## Editing Rules
 
 - changing reps or weight clears the proposed state for that row
-- changing amount also clears the proposed state for that row
 - `Add Set` duplicates the previous row's values but clears proposal metadata
 - removing a row reindexes visible set numbers
+- set count changes only through add/remove row actions
 
 ## Lock In Behavior
 
 On `Lock In`:
 
-1. expand each grouped row by its `amount`
-2. convert the grouped rows into individual `ExerciseSet` records
-3. reset each expanded set's `goal.amount` to `1`
-4. assign sequential `setNumber` values across the expanded list
-5. create a `BlockExercise` with empty notes
-6. append it to the active block
-7. return to `new-block`
+1. convert the rows into individual `ExerciseSet` records
+2. persist each set goal with `amount = 1`
+3. assign sequential `setNumber` values across the set list
+4. create a `BlockExercise` with empty notes
+5. append it to the active block
+6. return to `new-block`
 
 ## Loading State
 
@@ -63,7 +63,7 @@ On `Lock In`:
 ## Reimplementation Notes
 
 - goal rows allow zero values in the underlying model, but the UI presents them like blank numeric inputs
-- grouped-set editing and per-set storage are both required; a faithful rebuild should not collapse to only one representation
+- this editor is shared with the next-session target flow so both contexts use the same add/remove-row behavior
 
 ## Related Docs
 

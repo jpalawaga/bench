@@ -55,7 +55,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | `exerciseName` | string | denormalized for display and history stability |
 | `sets` | `ExerciseSet[]` | ordered, 1-based set numbers |
 | `notes` | string | note for this exercise in this workout |
-| `nextSessionTargets` | `SetGoal[]` optional | grouped targets to reuse later |
+| `nextSessionTargets` | `SetGoal[]` optional | targets to reuse later; legacy grouped values are still supported |
 
 ### ExerciseSet
 
@@ -72,7 +72,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | --- | --- | --- |
 | `reps` | number | non-negative integer in current UI |
 | `weight` | number | pounds only |
-| `amount` | number optional | grouped-count shorthand, defaults to 1 |
+| `amount` | number optional | grouped-count shorthand for storage compatibility, defaults to 1 |
 | `isProposed` | boolean | whether the value was auto-suggested |
 | `proposalSource` | `planned` or `previous` optional | suggestion origin |
 
@@ -135,7 +135,7 @@ The in-memory workout session has a small UI state machine layered on top of the
 - `addExerciseToBlock` appends a `BlockExercise` and returns to `new-block`.
 - `removeExerciseFromBlock` deletes an exercise from the active block.
 - `setPendingExercise` moves the UI into `goal-setting`.
-- `setNextSessionTargets` writes grouped next-session targets onto a `BlockExercise`.
+- `setNextSessionTargets` writes next-session targets onto a `BlockExercise`.
 
 ### Set recording
 
@@ -165,6 +165,10 @@ These queries are part of the product contract, not just implementation detail, 
 ### Consecutive goal grouping
 
 Consecutive sets with the same reps, weight, proposal state, and proposal source are collapsed into one grouped `SetGoal` with `amount > 1`.
+
+### Goal-row expansion
+
+When grouped `SetGoal` values are loaded into an editing flow, the UI expands them into explicit one-row-per-set entries. Users change set count by adding or removing rows, not by editing `amount` directly.
 
 ### Suggested-set precedence
 

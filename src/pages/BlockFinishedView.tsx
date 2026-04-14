@@ -1,13 +1,47 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { WorkoutNumberInput } from "@/components/workout/WorkoutNumberInput";
+import {
+  GoalSetEditor,
+  type EditableSetGoal,
+} from "@/components/workout/GoalSetEditor";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import {
-  getSetAmount,
-  groupConsecutiveSetGoals,
-  groupExerciseSetsToGoals,
+  exerciseSetsToGoals,
+  expandSetGoals,
+  generateId,
 } from "@/lib/utils";
 import type { SetGoal } from "@/types/models";
+
+function createEditableSetGoal(
+  goal: SetGoal,
+  setNumber: number,
+): EditableSetGoal {
+  return {
+    id: generateId(),
+    setNumber,
+    goal: {
+      ...goal,
+      amount: 1,
+      isProposed: false,
+      proposalSource: undefined,
+    },
+  };
+}
+
+function createEditableSetGoals(goals: SetGoal[]): EditableSetGoal[] {
+  return expandSetGoals(goals).map((goal, index) =>
+    createEditableSetGoal(goal, index + 1),
+  );
+}
+
+function renumberEditableSetGoals(
+  sets: EditableSetGoal[],
+): EditableSetGoal[] {
+  return sets.map((set, index) => ({
+    ...set,
+    setNumber: index + 1,
+  }));
+}
 
 export function BlockFinishedView() {
   const workout = useWorkoutStore((s) => s.workout);
@@ -37,7 +71,7 @@ export function BlockFinishedView() {
           key={ex.id}
           exerciseName={ex.exerciseName}
           savedTargets={ex.nextSessionTargets}
-          currentSets={groupExerciseSetsToGoals(ex.sets)}
+          currentSets={exerciseSetsToGoals(ex.sets)}
           onSave={(targets) => setNextSessionTargets(ei, targets)}
         />
       ))}
@@ -67,15 +101,6 @@ interface NextSessionPromptProps {
   onSave: (targets: SetGoal[]) => void;
 }
 
-function getEditableTargets(targets: SetGoal[]): SetGoal[] {
-  return groupConsecutiveSetGoals(targets).map((target) => ({
-    ...target,
-    amount: getSetAmount(target),
-    isProposed: false,
-    proposalSource: undefined,
-  }));
-}
-
 function NextSessionPrompt({
   exerciseName,
   savedTargets,
@@ -83,18 +108,18 @@ function NextSessionPrompt({
   onSave,
 }: NextSessionPromptProps) {
   const [expanded, setExpanded] = useState(false);
-  const [targets, setTargets] = useState<SetGoal[]>(() =>
-    getEditableTargets(currentSets),
+  const [targets, setTargets] = useState<EditableSetGoal[]>(() =>
+    createEditableSetGoals(currentSets),
   );
   const hasSavedTargets = Boolean(savedTargets?.length);
 
   useEffect(() => {
     if (hasSavedTargets && savedTargets) {
-      setTargets(getEditableTargets(savedTargets));
+      setTargets(createEditableSetGoals(savedTargets));
       return;
     }
 
-    setTargets(getEditableTargets(currentSets));
+    setTargets(createEditableSetGoals(currentSets));
   }, [currentSets, hasSavedTargets, savedTargets]);
 
   const updateTarget = (
@@ -103,12 +128,57 @@ function NextSessionPrompt({
     value: number,
   ) => {
     setTargets((prev) =>
-      prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)),
+      prev.map((target, i) =>
+        i === index
+          ? {
+              ...target,
+              goal: {
+                ...target.goal,
+                [field]: value,
+                amount: 1,
+                isProposed: false,
+                proposalSource: undefined,
+              },
+            }
+          : target,
+      ),
+    );
+  };
+
+  const addTarget = () => {
+    const lastTarget = targets[targets.length - 1];
+
+    setTargets((prev) => [
+      ...prev,
+      createEditableSetGoal(
+        lastTarget
+          ? {
+              ...lastTarget.goal,
+              amount: 1,
+              isProposed: false,
+              proposalSource: undefined,
+            }
+          : { reps: 0, weight: 0, amount: 1, isProposed: false },
+        prev.length + 1,
+      ),
+    ]);
+  };
+
+  const removeTarget = (index: number) => {
+    setTargets((prev) =>
+      renumberEditableSetGoals(prev.filter((_, i) => i !== index)),
     );
   };
 
   const handleSave = () => {
-    onSave(targets);
+    onSave(
+      targets.map((target) => ({
+        ...target.goal,
+        amount: 1,
+        isProposed: false,
+        proposalSource: undefined,
+      })),
+    );
     setExpanded(false);
   };
 
@@ -169,50 +239,13 @@ function NextSessionPrompt({
       <p className="text-text-primary font-medium mb-3">
         {exerciseName} — Next Time
       </p>
-      <div className="flex flex-col gap-2">
-        {targets.map((t, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="text-text-muted text-sm w-8">S{i + 1}</span>
-            <WorkoutNumberInput
-              value={t.reps || null}
-              onChange={(value) => updateTarget(i, "reps", value ?? 0)}
-              placeholder="Reps"
-              min={0}
-              className="h-9 w-16 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
-            />
-            <span className="text-text-muted text-xs">x</span>
-            <WorkoutNumberInput
-              value={t.weight || null}
-              onChange={(value) => updateTarget(i, "weight", value ?? 0)}
-              placeholder="lbs"
-              className="h-9 w-20 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
-            />
-            <span className="text-text-muted text-xs">lbs</span>
-            <select
-              value={getSetAmount(t)}
-              onChange={(e) =>
-                setTargets((prev) =>
-                  prev.map((target, index) =>
-                    index === i
-                      ? {
-                          ...target,
-                          amount: Number(e.target.value),
-                        }
-                      : target,
-                  ),
-                )
-              }
-              className="h-9 w-18 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-sm text-text-primary focus:bg-surface-overlay/85 focus:outline-none"
-            >
-              {Array.from({ length: 8 }, (_, index) => index + 1).map((amount) => (
-                <option key={amount} value={amount}>
-                  x{amount}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))}
-      </div>
+      <GoalSetEditor
+        sets={targets}
+        onRepsChange={(index, reps) => updateTarget(index, "reps", reps)}
+        onWeightChange={(index, weight) => updateTarget(index, "weight", weight)}
+        onRemoveSet={removeTarget}
+        onAddSet={addTarget}
+      />
       <div className="flex gap-2 mt-3">
         <Button
           variant="secondary"

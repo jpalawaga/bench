@@ -95,6 +95,27 @@ Countdown card used during a block.
 - primes Web Audio only from explicit enabled-timer gestures
 - favors mixing-friendly audio session behavior on supported browsers so timer alerts do not steal focus from background media
 
+## GoalSetEditor
+
+### Purpose
+
+Shared explicit-row editor used in both:
+
+- the pre-block goal-setting screen
+- the post-block next-session target screen
+
+### Contents
+
+- one editable row per set
+- add-set action below the list
+- remove-set actions on each row when more than one row exists
+
+### Interaction contract
+
+- set count changes only through add/remove row actions
+- set numbers are derived labels and are not directly editable
+- adding a row duplicates the previous row values and clears proposal metadata
+
 ## WorkoutNumberInput
 
 ### Purpose
@@ -118,14 +139,13 @@ This component changes how the app feels in use. A reimplementation should treat
 
 ### Purpose
 
-Reusable grouped goal row for the goal-setting screen.
+Reusable explicit goal row for shared set-goal editing.
 
 ### Contents
 
 - set label
 - reps input
 - weight input
-- amount select
 - proposal badge
 - optional remove button
 
@@ -141,7 +161,6 @@ The workout flow still has several repeated patterns that are not extracted:
 - block notes card
 - exercise notes popover
 - recent-note cards
-- editable target rows on the block-finished screen
 - in-progress set rows
 
 These are called out again in [cleanup.md](../cleanup.md).
