@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { RestTimer } from "@/components/workout/RestTimer";
 import { RestTimerSlider } from "@/components/workout/RestTimerSlider";
 import { WorkoutNumberInput } from "@/components/workout/WorkoutNumberInput";
@@ -13,6 +13,7 @@ import {
   type ExerciseNoteHistoryEntry,
 } from "@/db/repository";
 import { formatDateTime } from "@/lib/utils";
+import type { Exercise } from "@/types/models";
 
 type NotesMode = "hidden" | "view";
 type ExerciseTransitionDirection = "forward" | "backward";
@@ -45,6 +46,8 @@ export function BlockInProgressView() {
   const updateExerciseNotes = useWorkoutStore((s) => s.updateExerciseNotes);
   const [recentNotes, setRecentNotes] = useState<ExerciseNoteHistoryEntry[]>([]);
   const [activeExerciseFormNotes, setActiveExerciseFormNotes] = useState("");
+  const [isActiveExerciseFormNotesLoaded, setIsActiveExerciseFormNotesLoaded] =
+    useState(false);
   const [timerStartSignal, setTimerStartSignal] = useState(0);
   const [showTimerConfigurator, setShowTimerConfigurator] = useState(false);
   const [notesMode, setNotesMode] = useState<NotesMode>("hidden");
@@ -61,6 +64,9 @@ export function BlockInProgressView() {
   const exerciseTransitionTimeoutRef = useRef<number | null>(null);
   const exerciseTransitionStartTimeoutRef = useRef<number | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const activeExerciseRecordRef = useRef<Exercise | null>(null);
+  const activeExerciseFormNotesRef = useRef("");
+  const isActiveExerciseFormNotesLoadedRef = useRef(false);
   const workingNotesTextareaRefs = useRef<
     Record<string, HTMLTextAreaElement | null>
   >({});
@@ -101,18 +107,31 @@ export function BlockInProgressView() {
 
   useEffect(() => {
     if (!activeExercise?.exerciseId) {
+      activeExerciseRecordRef.current = null;
+      activeExerciseFormNotesRef.current = "";
+      isActiveExerciseFormNotesLoadedRef.current = false;
       setActiveExerciseFormNotes("");
+      setIsActiveExerciseFormNotesLoaded(false);
       return;
     }
 
     let cancelled = false;
+    activeExerciseRecordRef.current = null;
+    activeExerciseFormNotesRef.current = "";
+    isActiveExerciseFormNotesLoadedRef.current = false;
     setActiveExerciseFormNotes("");
+    setIsActiveExerciseFormNotesLoaded(false);
 
     void repository
       .getExercise(activeExercise.exerciseId)
       .then((exercise) => {
         if (!cancelled) {
-          setActiveExerciseFormNotes(exercise?.formNotes?.trim() ?? "");
+          const nextNotes = exercise?.formNotes ?? "";
+          activeExerciseRecordRef.current = exercise ?? null;
+          activeExerciseFormNotesRef.current = nextNotes;
+          isActiveExerciseFormNotesLoadedRef.current = true;
+          setActiveExerciseFormNotes(nextNotes);
+          setIsActiveExerciseFormNotesLoaded(true);
         }
       });
 
@@ -124,6 +143,29 @@ export function BlockInProgressView() {
   useEffect(() => {
     setNotesMode("hidden");
   }, [activeExercise?.exerciseId]);
+
+  const persistActiveExerciseFormNotes = async () => {
+    const exerciseRecord = activeExerciseRecordRef.current;
+    if (!exerciseRecord || !isActiveExerciseFormNotesLoadedRef.current) {
+      return;
+    }
+
+    const nextFormNotes = activeExerciseFormNotesRef.current;
+    const trimmedNextFormNotes = nextFormNotes.trim();
+    const trimmedCurrentFormNotes = exerciseRecord.formNotes?.trim() ?? "";
+
+    if (trimmedNextFormNotes === trimmedCurrentFormNotes) {
+      return;
+    }
+
+    const updatedExercise: Exercise = {
+      ...exerciseRecord,
+      formNotes: trimmedNextFormNotes || undefined,
+    };
+
+    activeExerciseRecordRef.current = updatedExercise;
+    await repository.updateExercise(updatedExercise);
+  };
 
   useEffect(() => {
     const previousIndex = previousExerciseTabIndexRef.current;
@@ -161,6 +203,7 @@ export function BlockInProgressView() {
 
   useEffect(() => {
     return () => {
+      void persistActiveExerciseFormNotes();
       if (exerciseTransitionTimeoutRef.current != null) {
         window.clearTimeout(exerciseTransitionTimeoutRef.current);
       }
@@ -209,6 +252,7 @@ export function BlockInProgressView() {
   };
 
   const handleTabChange = (index: number) => {
+    void persistActiveExerciseFormNotes();
     const nextActiveSetIndex = getFirstIncompleteSetIndex(block.exercises[index]);
     useWorkoutStore.setState({
       activeExerciseTabIndex: index,
@@ -229,6 +273,7 @@ export function BlockInProgressView() {
     if (!activeExercise) return;
 
     if (notesMode !== "hidden") {
+      void persistActiveExerciseFormNotes();
       setNotesMode("hidden");
       return;
     }
@@ -238,6 +283,19 @@ export function BlockInProgressView() {
     }
 
     setNotesMode("view");
+  };
+
+  const handleActiveExerciseFormNotesChange = (
+    event: ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const nextValue = event.target.value;
+    activeExerciseFormNotesRef.current = nextValue;
+    setActiveExerciseFormNotes(nextValue);
+  };
+
+  const handleFinishBlock = () => {
+    void persistActiveExerciseFormNotes();
+    finishBlock();
   };
 
   const focusWorkingNotesTextarea = (exerciseId: string) => {
@@ -280,7 +338,7 @@ export function BlockInProgressView() {
       >
         <div
           className={`flex min-w-0 flex-col ${
-            isGuidanceNotesOpen ? "gap-1" : "gap-0"
+            isGuidanceNotesOpen ? "gap-0.5 pb-1.5" : "gap-0"
           }`}
         >
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
@@ -325,15 +383,22 @@ export function BlockInProgressView() {
                     isGuidanceNotesOpen ? "translate-y-0" : "-translate-y-1"
                   }`}
                 >
-                  <div className="w-full min-w-0 max-w-full rounded-xl bg-surface-overlay/30 px-3 py-2.5 sm:max-w-[21rem]">
-                    {paneExerciseFormNotes ? (
-                      <p className="min-w-0 break-words text-sm leading-5 text-text-secondary">
-                        <LinkedText text={paneExerciseFormNotes} />
-                      </p>
+                  <div className="w-full min-w-0 max-w-full rounded-lg bg-surface-overlay/18 px-2.5 py-2 sm:max-w-[21rem]">
+                    {isActiveExerciseFormNotesLoaded ? (
+                      <textarea
+                        value={paneExerciseFormNotes}
+                        onChange={handleActiveExerciseFormNotesChange}
+                        onBlur={() => {
+                          void persistActiveExerciseFormNotes();
+                        }}
+                        aria-label={`${exercise.exerciseName} exercise note`}
+                        placeholder="Form cues, setup notes, reminders"
+                        rows={3}
+                        className="w-full resize-none bg-transparent text-sm leading-5 text-text-secondary placeholder:text-text-muted focus:outline-none"
+                      />
                     ) : (
                       <p className="text-sm leading-5 text-text-muted">
-                        No exercise guidance yet. Edit this exercise in the library
-                        to add form cues and reminders.
+                        Loading exercise notes...
                       </p>
                     )}
                   </div>
@@ -481,7 +546,7 @@ export function BlockInProgressView() {
           + Add Set
         </button>
 
-        <div className="rounded-xl bg-surface-overlay/25 px-3.5 py-2.5">
+        <div>
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">
               Working Notes
@@ -528,7 +593,7 @@ export function BlockInProgressView() {
               aria-label={`${exercise.exerciseName} working note`}
               placeholder="Pain, failed-rep reason, equipment issue, setup change"
               rows={3}
-              className="mt-2.5 w-full resize-none rounded-xl bg-surface-overlay/40 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/55 focus:outline-none"
+              className="mt-2.5 w-full resize-none rounded-lg bg-surface-overlay/32 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/45 focus:outline-none"
             />
           )}
 
@@ -546,7 +611,7 @@ export function BlockInProgressView() {
               {paneRecentNotes.map((entry, index) => (
                 <div
                   key={`${entry.startedAt}-${index}`}
-                  className="rounded-lg bg-surface-overlay/20 px-3 py-2.5"
+                  className="rounded-md bg-surface-overlay/18 px-3 py-2.5"
                 >
                   <p className="text-[11px] uppercase tracking-[0.12em] text-text-muted">
                     {formatDateTime(entry.startedAt)}
@@ -643,7 +708,7 @@ export function BlockInProgressView() {
       )}
 
       <div className="pb-6">
-        <Button fullWidth variant="secondary" onClick={finishBlock}>
+        <Button fullWidth variant="secondary" onClick={handleFinishBlock}>
           Finish Block
         </Button>
       </div>

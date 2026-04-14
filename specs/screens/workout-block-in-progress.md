@@ -75,8 +75,9 @@ Each pane contains:
 ### Open rules
 
 - tapping the notes button expands an inline disclosure directly below the exercise heading
-- if the current exercise already has guidance notes, the disclosure shows the note text
-- if it has no guidance notes, the disclosure shows a lightweight empty state
+- the disclosure contains the editable exercise-global guidance note field for that exercise
+- if the current exercise already has guidance notes, the textarea loads that text
+- if it has no guidance notes, the textarea opens blank with placeholder copy
 - tapping the button again while open collapses the disclosure
 - the trailing chevron rotates downward while the disclosure is open
 - the disclosure body animates down into place instead of using a popover shell
@@ -84,10 +85,10 @@ Each pane contains:
 
 ### View mode
 
-- shows note text
-- auto-links raw `http`, `https`, and `www.` URLs
+- shows a compact editable textarea
+- edits update the exercise-level guidance note rather than the session working note
+- the current edit is persisted when the field blurs, when the disclosure closes, when the user switches exercises, or when they finish the block
 - uses compact padding and a subdued surface without a strong border
-- if no guidance note exists, shows muted copy explaining that guidance is edited on the exercise detail screen
 
 ### Seen-state behavior
 
@@ -141,7 +142,7 @@ Each pane contains:
 - section heading: `Working Notes`
 - grey, low-emphasis `+ Add Note` action aligned to the right
 - tapping the action reveals a lightly padded, lightly styled textarea and focuses it immediately
-- the surrounding note area uses subdued container styling rather than a strong bordered card
+- the surrounding note area has no distinct background card
 - the textarea is for session-specific notes on that exercise instance only
 - if the current exercise already has a working note, the textarea is already visible
 - if there is no current working note and no historical note context, show muted empty-state text such as `_There are no notes_.`

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BlockListView } from "./BlockListView";
 import { BlockInProgressView } from "./BlockInProgressView";
@@ -87,16 +87,18 @@ describe("note surfaces", () => {
     expect(screen.getByText("Bench Press")).toBeTruthy();
   });
 
-  it("shows exercise guidance separately from working notes during a block", async () => {
+  it("edits exercise guidance separately from working notes during a block", async () => {
     setWorkoutState(createWorkout());
 
     vi.spyOn(repository, "getRecentExerciseNotes").mockResolvedValue([]);
-    vi.spyOn(repository, "getExercise").mockResolvedValue({
+    const exerciseRecord = {
       id: "exercise-1",
       name: "Bench Press",
       isCustom: false,
       formNotes: "Brace hard and keep the wrists stacked.",
-    } satisfies Exercise);
+    } satisfies Exercise;
+    vi.spyOn(repository, "getExercise").mockResolvedValue(exerciseRecord);
+    const updateExercise = vi.spyOn(repository, "updateExercise").mockResolvedValue();
 
     render(<BlockInProgressView />);
 
@@ -109,11 +111,27 @@ describe("note surfaces", () => {
 
     fireEvent.click(notesButton);
 
+    const guidanceTextarea = await screen.findByRole("textbox", {
+      name: /Bench Press exercise note/i,
+    });
+
     expect(
-      await screen.findByText("Brace hard and keep the wrists stacked."),
+      screen.getByDisplayValue("Brace hard and keep the wrists stacked."),
     ).toBeTruthy();
     expect(notesButton.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.queryByRole("button", { name: /Dismiss/i })).toBeNull();
+    expect(screen.getByDisplayValue("Session-specific working note")).toBeTruthy();
+
+    fireEvent.change(guidanceTextarea, {
+      target: { value: " Brace hard and drive back into the pad. " },
+    });
+    fireEvent.blur(guidanceTextarea);
+
+    await waitFor(() => {
+      expect(updateExercise).toHaveBeenCalledWith({
+        ...exerciseRecord,
+        formNotes: "Brace hard and drive back into the pad.",
+      });
+    });
 
     fireEvent.click(notesButton);
 

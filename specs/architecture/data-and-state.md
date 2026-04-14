@@ -22,7 +22,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | `name` | string | display label |
 | `isCustom` | boolean | seeded vs user-created |
 | `muscleGroup` | string optional | metadata for selection UI |
-| `formNotes` | string optional | exercise guidance note; edited in exercise detail and shown from the in-progress `Notes` disclosure during logging |
+| `formNotes` | string optional | exercise guidance note; editable from exercise detail and from the in-progress `Notes` disclosure during logging |
 
 ### Workout
 

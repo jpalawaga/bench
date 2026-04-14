@@ -28,11 +28,12 @@ These are notes on the exercise as a whole, not on one specific session. They ar
 ### Interaction model
 
 - the guidance note is treated as lightweight reference material
-- it is not the main writing surface during a workout
-- the in-progress `Notes` disclosure is read-only reference material, not an editor
+- it is still secondary to set entry during a workout
+- the in-progress `Notes` disclosure contains a compact inline editor for the same `formNotes` field used on the exercise detail screen
 - opening it expands an inline section below the exercise title and rotates the trailing chevron downward
+- edits persist back to the exercise library record when the field blurs, the disclosure closes, the user switches exercises, or the block finishes
 - the disclosure should feel compact and low-chrome rather than like a bordered callout card
-- if no guidance note exists, the `Notes` affordance should still open and explain that guidance can be added from the exercise detail screen
+- if no guidance note exists, the `Notes` affordance should still open with an empty textarea and placeholder guidance
 
 ## 2. Working Notes
 
@@ -60,7 +61,7 @@ These are notes on a particular exercise within a specific workout session. They
 - section heading: `Working Notes`
 - right side of the heading: grey, low-emphasis `+ Add Note` action
 - tapping the action reveals a lightly styled, lightly padded textarea and immediately focuses it
-- the writing surface should feel secondary to set entry, using subdued container styling rather than a dominant framed card
+- the writing surface should feel secondary to set entry, with no distinct section background and a lightly styled textarea
 - if the current exercise already has a working note for this session, the textarea should already be visible when the pane opens
 
 ### Empty and history states
@@ -79,7 +80,7 @@ That means the active workout flow and workout history should not render standal
 
 | Note type | Primary edit surface | Secondary surface |
 | --- | --- | --- |
-| Exercise guidance notes | exercise detail screen | `Notes` disclosure affordance during in-progress exercise logging |
+| Exercise guidance notes | exercise detail screen and in-progress `Notes` disclosure | exercise library preview and other read-only surfaces |
 | Working notes | in-progress exercise pane below sets | exercise history and other read-only history surfaces |
 
 ## Related Docs

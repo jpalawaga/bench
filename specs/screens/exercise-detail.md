@@ -26,6 +26,7 @@ This screen edits one exercise library record and shows historical usage for tha
 
 - `Name` field
 - `Notes` textarea for exercise guidance notes attached to the exercise as a whole
+- this guidance note can also be edited inline from the in-progress block screen
 
 ### History section
 
