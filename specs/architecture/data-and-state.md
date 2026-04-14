@@ -22,7 +22,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | `name` | string | display label |
 | `isCustom` | boolean | seeded vs user-created |
 | `muscleGroup` | string optional | metadata for selection UI |
-| `formNotes` | string optional | exercise-level guidance, edited in exercise detail |
+| `formNotes` | string optional | exercise guidance note; edited in exercise detail and shown from `Notes >` during in-progress logging |
 
 ### Workout
 
@@ -32,7 +32,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | `status` | `active` or `completed` | workout lifecycle |
 | `startedAt` | number | unix ms |
 | `completedAt` | number or `null` | set on finish |
-| `notes` | string optional | workout-wide notes |
+| `notes` | string optional | legacy implementation field; not part of the intended note model |
 | `blocks` | `Block[]` | ordered list |
 
 ### Block
@@ -43,7 +43,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | `order` | number | 1-based within the workout |
 | `status` | `planning`, `in-progress`, or `finished` | block lifecycle |
 | `restTimerSeconds` | number or `null` | `null` means timer off |
-| `notes` | string optional | block-wide notes |
+| `notes` | string optional | legacy implementation field; not part of the intended note model |
 | `exercises` | `BlockExercise[]` | length greater than 1 means superset |
 
 ### BlockExercise
@@ -54,7 +54,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | `exerciseId` | string | foreign key to `Exercise` |
 | `exerciseName` | string | denormalized for display and history stability |
 | `sets` | `ExerciseSet[]` | ordered, 1-based set numbers |
-| `notes` | string | note for this exercise in this workout |
+| `notes` | string | working note for this exercise in this workout session |
 | `nextSessionTargets` | `SetGoal[]` optional | targets to reuse later; legacy grouped values are still supported |
 
 ### ExerciseSet
@@ -88,6 +88,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 - Workouts are stored as embedded documents. A rebuild should preserve this because many UI queries depend on scanning the whole workout tree at once.
 - `exerciseName` is denormalized into `BlockExercise` so historical workouts remain readable even if the exercise library entry later changes or is deleted.
 - Note fields are normalized to empty strings in practice. The UI assumes textareas always receive a string.
+- The intended note UX centers on `Exercise.formNotes` and `BlockExercise.notes`. Workout-level and block-level note fields are currently present in code but are not part of the target note design.
 
 ## Persistent Storage
 
@@ -155,7 +156,7 @@ The persistence layer is responsible for these higher-level queries:
 - return top frequent exercises based on completed-workout appearances
 - return last performed dates for each exercise
 - return recent actuals or next-session targets for a given exercise
-- return recent workout, block, and exercise notes
+- return recent exercise working notes
 - return per-exercise history records for the exercise detail screen
 
 These queries are part of the product contract, not just implementation detail, because multiple screens depend on them directly.
@@ -190,4 +191,5 @@ When a set is completed in a block with multiple exercises, the next active set 
 
 - [Workout Session and Recovery](../features/workout-session-and-recovery.md)
 - [Exercise History and Suggestions](../features/exercise-history-and-suggestions.md)
+- [Notes](../features/notes.md)
 - [Workout Shell](../screens/workout-shell.md)

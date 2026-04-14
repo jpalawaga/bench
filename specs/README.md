@@ -23,6 +23,7 @@ This directory rebuilds the current product specification from the shipped appli
 
 ### Features
 - [Workout Session and Recovery](features/workout-session-and-recovery.md)
+- [Notes](features/notes.md)
 - [Exercise History and Suggestions](features/exercise-history-and-suggestions.md)
 - [Backup, Restore, and Sharing](features/backup-restore-and-sharing.md)
 - [PWA, Offline, and Platform Behavior](features/pwa-offline-and-platform.md)
@@ -37,7 +38,7 @@ This directory rebuilds the current product specification from the shipped appli
 
 ## System Summary
 
-- Benchpress is a phone-first workout tracker with an intentionally narrow scope: create a workout, divide it into blocks, log actual sets, keep notes, and optionally set targets for next time.
+- Benchpress is a phone-first workout tracker with an intentionally narrow scope: create a workout, divide it into blocks, log actual sets, keep exercise guidance and working notes, and optionally set targets for next time.
 - The app is local-first. Workouts and the exercise library live in IndexedDB and are usable offline.
 - There are four top-level routes and six workout subviews. Most of the product complexity lives inside the workout flow.
 - The product is optimized for gym-floor use: large touch targets, safe-area padding, dark surfaces, short paths, and hidden advanced tools instead of admin menus.

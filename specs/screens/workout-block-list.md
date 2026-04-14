@@ -10,12 +10,6 @@ This is the default workout subview after loading or resuming a workout. It acts
 
 - full-width `Add Block` button
 
-### Workout notes card
-
-- title: `Workout Notes`
-- multiline textarea for whole-workout notes
-- optional `Recent Workout Notes` section showing up to two previous completed workout notes
-
 ### Block list
 
 - empty state or one card per block
@@ -59,12 +53,6 @@ Each block card shows:
 - marks the workout completed
 - clears the active session store
 - returns the user to home through the workout shell
-
-## Notes Behavior
-
-- workout notes save on every change
-- recent workout notes come only from completed workouts with non-empty note text
-- the recent note list is informational only and not tappable
 
 ## Empty State
 

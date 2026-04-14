@@ -24,7 +24,6 @@ This is the read-only detail view for one completed workout. It is entered from 
 
 ### Main content
 
-- optional workout-notes card
 - empty state if the workout contains no blocks
 - otherwise one raised card per block
 
@@ -38,7 +37,6 @@ This is the read-only detail view for one completed workout. It is entered from 
 Each block card may include:
 
 - block label like `Block 2`
-- optional block note text
 - one section per exercise
 
 Each exercise section shows:
@@ -46,7 +44,7 @@ Each exercise section shows:
 - exercise name
 - one row per set
 - `Goal: reps x weight -> actual reps x weight`
-- optional per-workout exercise note
+- optional working note for that exercise in that session
 
 ## Copy Workout Format
 

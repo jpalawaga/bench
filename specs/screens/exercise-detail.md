@@ -25,7 +25,7 @@ This screen edits one exercise library record and shows historical usage for tha
 ### Editable card
 
 - `Name` field
-- `Notes` textarea for exercise-level `formNotes`
+- `Notes` textarea for exercise guidance notes attached to the exercise as a whole
 
 ### History section
 
@@ -57,7 +57,7 @@ Each history card can include:
 - superset label if the exercise was part of a multi-exercise block
 - comma-separated superset partner names
 - compact set summary using actual values, falling back to goals if actuals are blank
-- per-workout exercise note text if it exists
+- per-session working note text if it exists
 
 ## Editing Constraints
 
@@ -67,4 +67,5 @@ Each history card can include:
 ## Related Docs
 
 - [Exercise History and Suggestions](../features/exercise-history-and-suggestions.md)
+- [Notes](../features/notes.md)
 - [Exercise Library](exercise-library.md)

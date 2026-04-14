@@ -15,7 +15,7 @@ This file documents areas where the current implementation has overlapping compo
 | Area | Overlap | Suggested direction |
 | --- | --- | --- |
 | Text inputs | `Input` exists, `SearchInput` is separate, and most textareas and text fields are inline | decide whether to keep fully custom fields or create a small shared field system |
-| Notes UI | workout notes, block notes, exercise notes, and recent-note cards all use similar content containers but slightly different markup | extract note card and note history presentation primitives |
+| Notes UI | exercise guidance popovers, working-note entry, and working-note history rows should read as one coherent note system | extract guidance-note and working-note presentation primitives |
 | Inline icon buttons | many screens repeat the same rounded icon-button treatment for back, delete, and utility actions | create a small icon-button primitive with semantic variants |
 | In-progress set rows | the shared `GoalSetEditor` now covers pre-block and next-session goal entry, but in-progress logging still has its own row layout | decide whether the actual-entry row family should share more structure with goal editing |
 
@@ -33,7 +33,7 @@ This file documents areas where the current implementation has overlapping compo
 | --- | --- |
 | Unused `Input` component | either adopt it or remove it |
 | Exercise-row extraction | the exercise picker row could become a shared component if the library and picker should align visually |
-| History-card extraction | workout note history, block note history, and exercise note history cards are structurally close but not identical |
+| History-card extraction | working-note history rows and exercise history note presentation are structurally close but not identical |
 
 ## Recommendation
 

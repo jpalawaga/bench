@@ -8,7 +8,7 @@ Benchpress is a focused workout logger for use on a phone during a lifting sessi
 - build the workout out of one or more blocks
 - treat a block as either a single exercise or a superset
 - capture planned sets and actual performance
-- keep notes at workout, block, and exercise-in-workout levels
+- keep exercise guidance notes and session-specific working notes
 - help the user carry useful information forward into the next session
 
 The app does not currently attempt to be a full training planner, social product, analytics product, or cloud-synced program manager.
@@ -96,5 +96,6 @@ Any faithful rebuild should preserve these behaviors:
 ## Related Docs
 
 - [Data and State](data-and-state.md)
+- [Notes](../features/notes.md)
 - [Workout Session and Recovery](../features/workout-session-and-recovery.md)
 - [PWA, Offline, and Platform Behavior](../features/pwa-offline-and-platform.md)

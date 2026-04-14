@@ -14,7 +14,6 @@ This is the main execution screen during a workout. It combines timing, set entr
 
 ### Scrollable content
 
-- block notes card
 - one active exercise pane at a time
 - optional animated transition between exercise panes
 
@@ -48,12 +47,6 @@ This is the main execution screen during a workout. It combines timing, set entr
 - the app primes audio on user gestures so alerts can play later
 - expiry triggers a short double-tone alert when possible
 
-## Block Notes Card
-
-- always visible above the exercise editor
-- includes a block-level textarea
-- may show up to two recent block notes from previous completed blocks whose exercise ID set exactly matches the current block
-
 ## Exercise Tabs
 
 - hidden when the block has only one exercise
@@ -65,13 +58,14 @@ This is the main execution screen during a workout. It combines timing, set entr
 Each pane contains:
 
 - exercise name
-- `Notes >` button
-- optional notes popover
+- `Notes >` button for exercise guidance notes
+- optional exercise-guidance popover
 - set entry table
+- `Working Notes` section below the sets
 - `+ Add Set`
-- optional recent exercise notes section
+- compact working-note history for the last two entries
 
-## Exercise Notes Popover
+## Exercise Guidance Notes
 
 ### Modes
 
@@ -81,7 +75,7 @@ Each pane contains:
 
 ### Open rules
 
-- if the current exercise already has notes, tapping the notes button opens `view`
+- if the current exercise already has guidance notes, tapping the notes button opens `view`
 - if it has no notes, tapping opens `edit`
 - tapping the button again while open dismisses the popover
 
@@ -143,6 +137,17 @@ Each pane contains:
 - `+ Add Set` duplicates the last goal values and adds a blank actual row
 - removing a set reindexes the set numbers and adjusts the active-set pointer if needed
 
+## Working Notes
+
+- positioned below the sets for the current exercise
+- section heading: `Working Notes`
+- grey, low-emphasis `+ Add Note` action aligned to the right
+- tapping the action reveals a lightly padded, lightly styled textarea
+- the textarea is for session-specific notes on that exercise instance only
+- if there is no current working note and no historical note context, show muted empty-state text such as `_There are no notes_.`
+- show the last two historical working notes for the same exercise below the section in compact muted styling
+- working notes are distinct from the exercise-level guidance surfaced by `Notes >`
+
 ## Numeric Input Interaction Contract
 
 The workout number input is specialized:
@@ -153,12 +158,6 @@ The workout number input is specialized:
 - context menu is suppressed
 
 This interaction is part of the gym-floor usability contract and should be preserved.
-
-## Recent Exercise Notes
-
-- below the set table
-- up to two recent non-empty notes from previous completed workouts for this exercise
-- URLs are rendered as links using the same simple auto-link logic as live notes
 
 ## Finish Block
 
@@ -174,4 +173,5 @@ If the user later reopens a finished block from the block list, they return to t
 
 - [Workout Components](../components/workout-components.md)
 - [Exercise History and Suggestions](../features/exercise-history-and-suggestions.md)
+- [Notes](../features/notes.md)
 - [Workout: Block Finished](workout-block-finished.md)

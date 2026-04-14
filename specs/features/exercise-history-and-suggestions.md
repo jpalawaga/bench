@@ -6,8 +6,7 @@ Several screens depend on derived history rather than raw CRUD:
 
 - exercise selection
 - goal setting
-- in-progress notes panels
-- block-level note suggestions
+- in-progress working-note history
 - exercise detail history
 
 These queries should be treated as product features, not convenience helpers.
@@ -66,21 +65,11 @@ Proposed rows preserve a source label:
 
 The UI uses that source to change the badge text and color.
 
-## Note History
+## Working Note History
 
-### Recent workout notes
-
-- The block list screen loads the two most recent completed workout notes that are non-empty.
-
-### Recent exercise notes
-
-- The in-progress screen loads the two most recent non-empty notes for the current exercise from completed workouts.
+- The in-progress exercise pane shows the two most recent non-empty working notes for the current exercise from completed workouts.
 - Only finished blocks count.
-
-### Recent block notes
-
-- The in-progress screen loads the two most recent non-empty block notes whose exercise set matches the current block exactly.
-- Matching is order-independent. The implementation sorts exercise IDs before comparing signatures.
+- These entries are compact historical context, not editable content.
 
 ## Exercise History Entries
 
@@ -91,7 +80,7 @@ Each entry includes:
 - workout id
 - workout start and completion timestamps
 - exercise name at the time of the workout
-- exercise note text
+- working note text
 - the performed sets
 - whether the block was a superset
 - the names of the other exercises in that superset
@@ -104,3 +93,4 @@ This allows the detail screen to answer questions like "what did I actually do l
 - [Workout: Goal Setting](../screens/workout-goal-setting.md)
 - [Workout: Block In Progress](../screens/workout-block-in-progress.md)
 - [Exercise Detail](../screens/exercise-detail.md)
+- [Notes](notes.md)

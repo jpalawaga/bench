@@ -159,8 +159,8 @@ Reusable explicit goal row for shared set-goal editing.
 
 The workout flow still has several repeated patterns that are not extracted:
 
-- block notes card
-- exercise notes popover
+- exercise guidance popover
+- working-notes section and history rows
 - recent-note cards
 - in-progress set rows
 
