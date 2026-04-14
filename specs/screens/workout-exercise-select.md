@@ -24,7 +24,8 @@ On mount, the screen loads:
 ## Search Behavior
 
 - search is debounced by about 150ms
-- matching is a case-insensitive name contains search
+- matching is case-insensitive and supports both literal name fragments and common exercise shorthand
+- common abbreviation-style queries such as `OHP`, `RDL`, `BSS`, `CGBP`, and mixed shorthand like `db row` should resolve to the expected exercises
 - blank query returns the full exercise library sorted by name
 
 ## Section Rules

@@ -6,6 +6,7 @@ import type {
   Workout,
 } from "@/types/models";
 import { db } from "./database";
+import { exerciseMatchesQuery } from "./exerciseSearch";
 import { SEED_EXERCISES } from "./seed";
 
 export interface ExerciseNoteHistoryEntry {
@@ -130,9 +131,8 @@ class DexieWorkoutRepository implements WorkoutRepository {
     if (!query.trim()) {
       return this.getAllExercises();
     }
-    const lower = query.toLowerCase();
     return db.exercises
-      .filter((ex) => ex.name.toLowerCase().includes(lower))
+      .filter((ex) => exerciseMatchesQuery(ex, query))
       .sortBy("name");
   }
 

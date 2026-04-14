@@ -17,7 +17,7 @@ This route provides direct management of the exercise library outside an active 
 ## Data Rules
 
 - blank query loads the full exercise library sorted by name
-- non-blank query runs a case-insensitive name search
+- non-blank query runs a case-insensitive search that supports both literal name fragments and common exercise abbreviations
 - both seeded and custom exercises appear in the same list
 
 ## Row Contents

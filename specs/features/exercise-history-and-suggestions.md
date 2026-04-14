@@ -32,6 +32,19 @@ Algorithm:
 
 The main alphabetical list excludes any exercise already shown in the frequent section to avoid duplicates.
 
+## Exercise Search Matching
+
+Exercise search is shared by the workout picker and the exercise library.
+
+Matching rules:
+
+- literal name fragments still match normally
+- punctuation and spacing differences are ignored for matching
+- common abbreviation codes are supported for many seeded lifts, such as `OHP`, `RDL`, `BSS`, and `CGBP`
+- mixed shorthand using equipment abbreviations also matches, such as `db row` and `bb curl`
+
+The matching is implemented as normalized compact-string search over the exercise name plus derived shorthand variants.
+
 ## Last Performed Date
 
 - The exercise picker can show a small right-aligned last performed date for each exercise.
