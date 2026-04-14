@@ -117,10 +117,13 @@ describe("GoalSetEditor", () => {
     expect(screen.getByLabelText("Remove set 1")).toBeTruthy();
     expect(screen.getByLabelText("Remove set 2")).toBeTruthy();
     expect(screen.getByTestId("set-row-1").className).toContain(
-      "grid-cols-[1.9rem_minmax(0,1fr)_auto]",
+      "grid-cols-[1.9rem_auto_minmax(0,1fr)_auto]",
     );
     expect(screen.getByTestId("set-row-inputs-1").className).not.toContain(
       "flex-wrap",
+    );
+    expect(screen.getByTestId("set-row-badge-slot-1").className).toContain(
+      "justify-center",
     );
   });
 });

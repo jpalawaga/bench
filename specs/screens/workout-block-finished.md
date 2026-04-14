@@ -31,6 +31,7 @@ Each exercise starts collapsed.
 - `+ Add Set` action
 - per-row remove buttons when more than one row exists
 - shared goal rows stay compact on narrow phones instead of wrapping into stacked multi-line rows
+- when present, proposal badges are centered in the middle space before the remove button rather than trailing against it
 - `Close` button
 - `Save Targets` button
 

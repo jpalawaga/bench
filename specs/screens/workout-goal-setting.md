@@ -21,6 +21,7 @@ Each row contains:
 - optional proposal badge
 - optional remove button when more than one row exists
 - the row stays compact on narrow phones; badge and control sizing should tighten before the row is allowed to wrap
+- when shown, the proposal badge is visually centered between the numeric editors and the remove button
 
 Set numbers are derived from row order and cannot be edited directly.
 

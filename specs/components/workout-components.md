@@ -117,6 +117,7 @@ Shared explicit-row editor used in both:
 - adding a row duplicates the previous row values and clears proposal metadata
 - proposal badges and remove actions must remain visible on narrow screens; they cannot be pushed off-screen by the row inputs
 - rows should remain compact enough to stay on one line on narrow phones, using reduced badge chrome and tighter input spacing rather than wrapping the set editor into multiple lines
+- when a proposal badge is present, it sits centered in the remaining space between the numeric inputs and the remove action rather than hugging the trailing edge
 
 ## WorkoutNumberInput
 

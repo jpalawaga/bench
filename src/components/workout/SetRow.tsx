@@ -38,7 +38,7 @@ export function SetRow({
   return (
     <div
       data-testid={`set-row-${setNumber}`}
-      className="grid grid-cols-[1.9rem_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-surface-overlay/25 px-2.5 py-2"
+      className="grid grid-cols-[1.9rem_auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-surface-overlay/25 px-2.5 py-2"
     >
       <span className="w-7 shrink-0 text-[13px] font-medium text-text-muted">
         S{setNumber}
@@ -73,7 +73,10 @@ export function SetRow({
         </span>
       </div>
 
-      <div className="flex items-center justify-end gap-1">
+      <div
+        data-testid={`set-row-badge-slot-${setNumber}`}
+        className="flex min-w-0 items-center justify-center"
+      >
         {proposalLabel && (
           <span
             className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold leading-none tracking-[0.08em] ${getProposalClasses(goal)}`}
@@ -81,7 +84,9 @@ export function SetRow({
             {proposalLabel}
           </span>
         )}
+      </div>
 
+      <div className="flex items-center justify-end">
         {canRemove && (
           <button
             onClick={onRemove}
