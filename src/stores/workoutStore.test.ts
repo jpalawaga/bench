@@ -15,12 +15,17 @@ function createExercise(
       id: `${id}-set-${index + 1}`,
       setNumber: index + 1,
       goal: {
+        mode: "strength",
         reps: 8,
         weight: 100,
         amount: 1,
         isProposed: false,
       },
-      actual,
+      actual: {
+        mode: "strength",
+        reps: actual.reps,
+        weight: actual.weight,
+      },
     })),
   };
 }

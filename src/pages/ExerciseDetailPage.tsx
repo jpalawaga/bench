@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Modal } from "@/components/ui/Modal";
 import { repository, type ExerciseHistoryEntry } from "@/db/repository";
-import { formatDateTime } from "@/lib/utils";
+import { formatActualMetrics, formatDateTime } from "@/lib/utils";
 import type { Exercise } from "@/types/models";
 
 function formatPerformedSets(entry: ExerciseHistoryEntry): string {
   return entry.performedSets
-    .map((set) => `${set.actual.reps ?? set.goal.reps}x${set.actual.weight ?? set.goal.weight}`)
+    .map((set) => formatActualMetrics(set.actual, set.goal))
     .join(", ");
 }
 

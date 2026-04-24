@@ -109,15 +109,18 @@ Each pane contains:
 
 - checkmark button
 - set label like `S1`
-- read-only goal text like `8x135`
-- reps actual input
-- weight actual input
+- read-only goal summary:
+  - strength exercises show `reps x weight` such as `8x135`
+  - cardio exercises show `duration·Llevel` such as `10:00·L7`, where duration formats as `Mm` for whole minutes, `Ss` for sub-minute times, and `M:SS` otherwise
+- two actual inputs matching the exercise's tracking mode:
+  - strength: reps input and weight input separated by `x`
+  - cardio: duration (seconds) input and level input separated by `@`
 - delete button when more than one set exists
 
 ### Checkmark button
 
-- if actuals are blank, fills them from the goal values
-- if actuals are partially filled, preserves existing entered values and only falls back for blanks
+- if actuals are blank, fills them from the goal values in the same mode
+- if actuals are partially filled, preserves existing entered values and only falls back for blanks in the matching mode
 - after recording the set, advances the active set and starts rest timing
 
 ### Active set highlight
@@ -127,10 +130,10 @@ Each pane contains:
 
 ### Manual actual entry
 
-- reps and weight are independent numeric inputs
+- the two actual inputs are independent numeric fields
 - blank is represented as `null`
-- entering reps and pressing Enter moves focus to weight
-- pressing Enter on weight completes the set
+- for strength sets, Enter on reps moves focus to weight, and Enter on weight completes the set
+- for cardio sets, Enter on duration moves focus to level, and Enter on level completes the set
 
 ### Add and remove set
 

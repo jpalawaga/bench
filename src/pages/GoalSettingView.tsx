@@ -7,12 +7,20 @@ import {
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { repository } from "@/db/repository";
 import {
+  emptyActualForMode,
+  emptyGoalForMode,
   expandSetGoals,
   generateId,
   getSetAmount,
   groupConsecutiveSetGoals,
 } from "@/lib/utils";
-import type { BlockExercise, SetGoal } from "@/types/models";
+import type {
+  BlockExercise,
+  CardioSetGoal,
+  SetGoal,
+  StrengthSetGoal,
+  TrackingMode,
+} from "@/types/models";
 
 function createEditableSetGoal(
   goal: SetGoal,
@@ -57,71 +65,86 @@ function toEditableSetGoals(goals: SetGoal[]): EditableSetGoal[] {
   );
 }
 
+function toProposedGoals(
+  goals: SetGoal[],
+  source: "planned" | "previous",
+): SetGoal[] {
+  return goals.map((goal) => ({
+    ...goal,
+    isProposed: true,
+    proposalSource: source,
+  }));
+}
+
 export function GoalSettingView() {
   const pendingExerciseId = useWorkoutStore((s) => s.pendingExerciseId);
   const pendingExerciseName = useWorkoutStore((s) => s.pendingExerciseName);
+  const pendingExerciseMode = useWorkoutStore((s) => s.pendingExerciseMode);
   const addExerciseToBlock = useWorkoutStore((s) => s.addExerciseToBlock);
 
   const [sets, setSets] = useState<EditableSetGoal[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!pendingExerciseId) return;
+    if (!pendingExerciseId || !pendingExerciseMode) return;
     setLoaded(false);
+    const mode = pendingExerciseMode;
 
     const load = async () => {
-      // Check for next-session targets first, then fall back to last actuals
-      const targets = await repository.getNextSessionTargets(pendingExerciseId);
+      const targets = await repository.getNextSessionTargets(
+        pendingExerciseId,
+        mode,
+      );
       if (targets && targets.length > 0) {
-        setSets(
-          toEditableSetGoals(
-            targets.map((target) => ({
-              ...target,
-              isProposed: true,
-              proposalSource: "planned",
-            })),
-          ),
-        );
+        setSets(toEditableSetGoals(toProposedGoals(targets, "planned")));
         setLoaded(true);
         return;
       }
 
-      const lastActuals = await repository.getLastActuals(pendingExerciseId);
+      const lastActuals = await repository.getLastActuals(
+        pendingExerciseId,
+        mode,
+      );
       if (lastActuals && lastActuals.length > 0) {
-        setSets(
-          toEditableSetGoals(
-            groupConsecutiveSetGoals(
-              lastActuals.map((s) => ({
-                reps: s.actual.reps ?? s.goal.reps,
-                weight: s.actual.weight ?? s.goal.weight,
-                amount: 1,
-                isProposed: true,
-                proposalSource: "previous",
-              })),
-            ),
-          ),
-        );
+        const goals: SetGoal[] = lastActuals.map((set) => {
+          if (set.goal.mode === "strength" && set.actual.mode === "strength") {
+            return {
+              mode: "strength",
+              reps: set.actual.reps ?? set.goal.reps,
+              weight: set.actual.weight ?? set.goal.weight,
+              amount: 1,
+              isProposed: true,
+              proposalSource: "previous",
+            } satisfies StrengthSetGoal;
+          }
+          if (set.goal.mode === "cardio" && set.actual.mode === "cardio") {
+            return {
+              mode: "cardio",
+              seconds: set.actual.seconds ?? set.goal.seconds,
+              level: set.actual.level ?? set.goal.level,
+              amount: 1,
+              isProposed: true,
+              proposalSource: "previous",
+            } satisfies CardioSetGoal;
+          }
+          return { ...set.goal, amount: 1, isProposed: true, proposalSource: "previous" };
+        });
+
+        setSets(toEditableSetGoals(groupConsecutiveSetGoals(goals)));
         setLoaded(true);
         return;
       }
 
-      // Default: one empty set
-      setSets([
-        createEditableSetGoal(
-          { reps: 0, weight: 0, amount: 1, isProposed: false },
-          0,
-        ),
-      ]);
+      setSets([createEditableSetGoal(emptyGoalForMode(mode), 0)]);
       setLoaded(true);
     };
 
     void load();
-  }, [pendingExerciseId]);
+  }, [pendingExerciseId, pendingExerciseMode]);
 
-  const updateSetGoal = (
+  const updateSetGoalField = (
     index: number,
-    field: keyof Pick<SetGoal, "reps" | "weight" | "amount">,
-    value: number,
+    updater: (goal: SetGoal) => SetGoal,
   ) => {
     setSets((prev) =>
       renumberEditableSetGoals(
@@ -130,9 +153,43 @@ export function GoalSettingView() {
             ? {
                 ...s,
                 goal: {
+                  ...updater(s.goal),
+                  isProposed: false,
+                  proposalSource: undefined,
+                },
+              }
+            : s,
+        ),
+      ),
+    );
+  };
+
+  const handleRepsChange = (index: number, reps: number) =>
+    updateSetGoalField(index, (goal) =>
+      goal.mode === "strength" ? { ...goal, reps } : goal,
+    );
+  const handleWeightChange = (index: number, weight: number) =>
+    updateSetGoalField(index, (goal) =>
+      goal.mode === "strength" ? { ...goal, weight } : goal,
+    );
+  const handleSecondsChange = (index: number, seconds: number) =>
+    updateSetGoalField(index, (goal) =>
+      goal.mode === "cardio" ? { ...goal, seconds } : goal,
+    );
+  const handleLevelChange = (index: number, level: number) =>
+    updateSetGoalField(index, (goal) =>
+      goal.mode === "cardio" ? { ...goal, level } : goal,
+    );
+  const handleAmountChange = (index: number, amount: number) => {
+    setSets((prev) =>
+      renumberEditableSetGoals(
+        prev.map((s, i) =>
+          i === index
+            ? {
+                ...s,
+                goal: {
                   ...s.goal,
-                  [field]:
-                    field === "amount" ? Math.max(1, value) : value,
+                  amount: Math.max(1, amount),
                   isProposed: false,
                   proposalSource: undefined,
                 },
@@ -144,21 +201,21 @@ export function GoalSettingView() {
   };
 
   const addSet = () => {
+    if (!pendingExerciseMode) return;
     const lastSet = sets[sets.length - 1];
+    const baseGoal: SetGoal = lastSet
+      ? {
+          ...lastSet.goal,
+          amount: 1,
+          isProposed: false,
+          proposalSource: undefined,
+        }
+      : emptyGoalForMode(pendingExerciseMode);
+
     setSets((prev) =>
       renumberEditableSetGoals([
         ...prev,
-        createEditableSetGoal(
-          lastSet
-            ? {
-                ...lastSet.goal,
-                amount: 1,
-                isProposed: false,
-                proposalSource: undefined,
-              }
-            : { reps: 0, weight: 0, amount: 1, isProposed: false },
-          0,
-        ),
+        createEditableSetGoal(baseGoal, 0),
       ]),
     );
   };
@@ -168,7 +225,10 @@ export function GoalSettingView() {
   };
 
   const handleLockIn = () => {
-    if (!pendingExerciseId || !pendingExerciseName) return;
+    if (!pendingExerciseId || !pendingExerciseName || !pendingExerciseMode) {
+      return;
+    }
+    const mode: TrackingMode = pendingExerciseMode;
     const finalizedGoals = expandSetGoals(
       sets.map((set) => ({
         ...set.goal,
@@ -176,10 +236,10 @@ export function GoalSettingView() {
       })),
     );
     const finalizedSets = finalizedGoals.map((goal, index) => ({
-        id: generateId(),
-        setNumber: index + 1,
-        goal: { ...goal, amount: 1 },
-        actual: { reps: null, weight: null },
+      id: generateId(),
+      setNumber: index + 1,
+      goal: { ...goal, amount: 1 },
+      actual: emptyActualForMode(mode),
     }));
     const exercise: BlockExercise = {
       id: generateId(),
@@ -207,13 +267,11 @@ export function GoalSettingView() {
 
       <GoalSetEditor
         sets={sets}
-        onRepsChange={(index, reps) => updateSetGoal(index, "reps", reps)}
-        onWeightChange={(index, weight) =>
-          updateSetGoal(index, "weight", weight)
-        }
-        onAmountChange={(index, amount) =>
-          updateSetGoal(index, "amount", amount)
-        }
+        onRepsChange={handleRepsChange}
+        onWeightChange={handleWeightChange}
+        onSecondsChange={handleSecondsChange}
+        onLevelChange={handleLevelChange}
+        onAmountChange={handleAmountChange}
         onRemoveSet={removeSet}
         onAddSet={addSet}
       />

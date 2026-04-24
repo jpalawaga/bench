@@ -17,6 +17,8 @@ These queries should be treated as product features, not convenience helpers.
 - The seed covers common lifts across chest, back, shoulders, legs, arms, compound, core, and cardio.
 - Seeded exercises have `isCustom: false`.
 - Custom exercises created by the user have `isCustom: true`.
+- Seeded cardio machines (`Treadmill`, `Rowing Machine`, `Assault Bike`, `Stationary Bike`, `Stairmaster`, `Elliptical`) have `trackingMode: "cardio"`. All other seeded exercises have `trackingMode: "strength"`.
+- Custom exercises capture `trackingMode` at creation time based on the user's selection in the picker.
 
 ## Frequent Exercises
 
@@ -54,9 +56,11 @@ The matching is implemented as normalized compact-string search over the exercis
 
 When the user selects an exercise and enters goal setting, the app builds proposed goal rows with this precedence:
 
-1. saved `nextSessionTargets`
-2. last actual performed sets from the most recent completed workout
-3. one blank set row
+1. saved `nextSessionTargets` for that exercise, restricted to the current tracking mode
+2. last actual performed sets from the most recent completed workout for that exercise, restricted to the current tracking mode
+3. one blank set row in the current tracking mode
+
+Because both lookups are mode-filtered, changing an exercise's tracking mode later never proposes stale metrics from the previous mode. If an exercise has history in only the other mode, the screen falls through to the blank-row case.
 
 Proposed rows preserve a source label:
 

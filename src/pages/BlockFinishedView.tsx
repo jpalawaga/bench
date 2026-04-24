@@ -6,12 +6,13 @@ import {
 } from "@/components/workout/GoalSetEditor";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import {
+  emptyGoalForMode,
   exerciseSetsToGoals,
   generateId,
   getSetAmount,
   groupConsecutiveSetGoals,
 } from "@/lib/utils";
-import type { SetGoal } from "@/types/models";
+import type { SetGoal, TrackingMode } from "@/types/models";
 
 function createEditableSetGoal(
   goal: SetGoal,
@@ -58,6 +59,10 @@ function renumberEditableSetGoals(
   });
 }
 
+function inferModeFromGoals(goals: SetGoal[]): TrackingMode {
+  return goals[0]?.mode ?? "strength";
+}
+
 export function BlockFinishedView() {
   const workout = useWorkoutStore((s) => s.workout);
   const activeBlockIndex = useWorkoutStore((s) => s.activeBlockIndex);
@@ -80,7 +85,6 @@ export function BlockFinishedView() {
         </p>
       </div>
 
-      {/* Next session targets per exercise */}
       {block.exercises.map((ex, ei) => (
         <NextSessionPrompt
           key={ex.id}
@@ -122,6 +126,9 @@ function NextSessionPrompt({
   currentSets,
   onSave,
 }: NextSessionPromptProps) {
+  const mode = inferModeFromGoals(
+    savedTargets && savedTargets.length > 0 ? savedTargets : currentSets,
+  );
   const [expanded, setExpanded] = useState(false);
   const [targets, setTargets] = useState<EditableSetGoal[]>(() =>
     createEditableSetGoals(currentSets),
@@ -137,10 +144,9 @@ function NextSessionPrompt({
     setTargets(createEditableSetGoals(currentSets));
   }, [currentSets, hasSavedTargets, savedTargets]);
 
-  const updateTarget = (
+  const updateTargetField = (
     index: number,
-    field: "reps" | "weight" | "amount",
-    value: number,
+    updater: (goal: SetGoal) => SetGoal,
   ) => {
     setTargets((prev) =>
       renumberEditableSetGoals(
@@ -149,9 +155,43 @@ function NextSessionPrompt({
             ? {
                 ...target,
                 goal: {
+                  ...updater(target.goal),
+                  isProposed: false,
+                  proposalSource: undefined,
+                },
+              }
+            : target,
+        ),
+      ),
+    );
+  };
+
+  const handleRepsChange = (index: number, reps: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "strength" ? { ...goal, reps } : goal,
+    );
+  const handleWeightChange = (index: number, weight: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "strength" ? { ...goal, weight } : goal,
+    );
+  const handleSecondsChange = (index: number, seconds: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "cardio" ? { ...goal, seconds } : goal,
+    );
+  const handleLevelChange = (index: number, level: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "cardio" ? { ...goal, level } : goal,
+    );
+  const handleAmountChange = (index: number, amount: number) => {
+    setTargets((prev) =>
+      renumberEditableSetGoals(
+        prev.map((target, i) =>
+          i === index
+            ? {
+                ...target,
+                goal: {
                   ...target.goal,
-                  [field]:
-                    field === "amount" ? Math.max(1, value) : value,
+                  amount: Math.max(1, amount),
                   isProposed: false,
                   proposalSource: undefined,
                 },
@@ -164,21 +204,19 @@ function NextSessionPrompt({
 
   const addTarget = () => {
     const lastTarget = targets[targets.length - 1];
+    const baseGoal: SetGoal = lastTarget
+      ? {
+          ...lastTarget.goal,
+          amount: 1,
+          isProposed: false,
+          proposalSource: undefined,
+        }
+      : emptyGoalForMode(mode);
 
     setTargets((prev) =>
       renumberEditableSetGoals([
         ...prev,
-        createEditableSetGoal(
-          lastTarget
-            ? {
-                ...lastTarget.goal,
-                amount: 1,
-                isProposed: false,
-                proposalSource: undefined,
-              }
-            : { reps: 0, weight: 0, amount: 1, isProposed: false },
-          0,
-        ),
+        createEditableSetGoal(baseGoal, 0),
       ]),
     );
   };
@@ -268,11 +306,11 @@ function NextSessionPrompt({
       </p>
       <GoalSetEditor
         sets={targets}
-        onRepsChange={(index, reps) => updateTarget(index, "reps", reps)}
-        onWeightChange={(index, weight) => updateTarget(index, "weight", weight)}
-        onAmountChange={(index, amount) =>
-          updateTarget(index, "amount", amount)
-        }
+        onRepsChange={handleRepsChange}
+        onWeightChange={handleWeightChange}
+        onSecondsChange={handleSecondsChange}
+        onLevelChange={handleLevelChange}
+        onAmountChange={handleAmountChange}
         onRemoveSet={removeTarget}
         onAddSet={addTarget}
       />

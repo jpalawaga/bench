@@ -1,4 +1,5 @@
 import type { BlockExercise } from "@/types/models";
+import { formatGoalMetrics } from "@/lib/utils";
 
 interface ExerciseCardProps {
   exercise: BlockExercise;
@@ -12,7 +13,7 @@ export function ExerciseCard({
   onRemove,
 }: ExerciseCardProps) {
   const setsSummary = exercise.sets
-    .map((s) => `${s.goal.reps}x${s.goal.weight}`)
+    .map((s) => formatGoalMetrics(s.goal))
     .join(", ");
 
   return (

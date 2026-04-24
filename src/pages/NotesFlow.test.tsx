@@ -34,12 +34,14 @@ function createWorkout(overrides: Partial<Workout> = {}): Workout {
                 id: "set-1",
                 setNumber: 1,
                 goal: {
+                  mode: "strength",
                   reps: 8,
                   weight: 185,
                   amount: 1,
                   isProposed: false,
                 },
                 actual: {
+                  mode: "strength",
                   reps: null,
                   weight: null,
                 },
@@ -95,6 +97,7 @@ describe("note surfaces", () => {
       id: "exercise-1",
       name: "Bench Press",
       isCustom: false,
+      trackingMode: "strength",
       formNotes: "Brace hard and keep the wrists stacked.",
     } satisfies Exercise;
     vi.spyOn(repository, "getExercise").mockResolvedValue(exerciseRecord);
@@ -150,6 +153,7 @@ describe("note surfaces", () => {
       id: "exercise-1",
       name: "Bench Press",
       isCustom: false,
+      trackingMode: "strength",
       formNotes: "",
     } satisfies Exercise);
     vi.spyOn(repository, "updateExercise").mockResolvedValue();
@@ -190,6 +194,7 @@ describe("note surfaces", () => {
       id: "exercise-1",
       name: "Bench Press",
       isCustom: false,
+      trackingMode: "strength",
       formNotes: "",
     } satisfies Exercise);
 

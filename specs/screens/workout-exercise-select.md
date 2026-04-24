@@ -59,7 +59,8 @@ Selecting a row does not add the exercise immediately. It sets the pending exerc
 
 ### Expanded state
 
-- inline text input
+- inline text input for the exercise name
+- two-option tracking mode toggle labeled `Reps × Weight` and `Time × Level`, defaulting to `Reps × Weight`
 - `Add` button
 
 ### Submission rules
@@ -69,9 +70,14 @@ Selecting a row does not add the exercise immediately. It sets the pending exerc
   - generated id
   - trimmed name
   - `isCustom: true`
+  - `trackingMode` set from the selected toggle (`strength` for `Reps × Weight`, `cardio` for `Time × Level`)
 - immediately treat it like a selected exercise and continue to goal setting
 
 No duplicate-name prevention or extra metadata capture exists in the current product.
+
+## Selecting An Existing Exercise
+
+Selecting a row sets the pending exercise context along with that exercise's `trackingMode` so the goal-setting screen opens in the right shape. Seeded cardio exercises such as `Treadmill`, `Rowing Machine`, `Assault Bike`, `Stationary Bike`, `Stairmaster`, and `Elliptical` carry `trackingMode: "cardio"`; everything else is `strength`.
 
 ## Loading and Empty States
 

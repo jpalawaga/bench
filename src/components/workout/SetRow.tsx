@@ -17,24 +17,40 @@ function getProposalClasses(goal: SetGoal): string {
   return "border-proposed/35 bg-proposed/12 text-proposed";
 }
 
-interface SetRowProps {
-  goal: SetGoal;
-  setNumber: number;
+interface StrengthCallbacks {
   onRepsChange: (reps: number) => void;
   onWeightChange: (weight: number) => void;
+}
+
+interface CardioCallbacks {
+  onSecondsChange: (seconds: number) => void;
+  onLevelChange: (level: number) => void;
+}
+
+type SetRowProps = {
+  goal: SetGoal;
+  setNumber: number;
   onAmountChange: (amount: number) => void;
   onRemove: () => void;
   canRemove: boolean;
-}
+} & Partial<StrengthCallbacks> &
+  Partial<CardioCallbacks>;
+
+const inputBaseClass = `
+  h-8 rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
+  placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
+`;
 
 export function SetRow({
   goal,
   setNumber,
-  onRepsChange,
-  onWeightChange,
   onAmountChange,
   onRemove,
   canRemove,
+  onRepsChange,
+  onWeightChange,
+  onSecondsChange,
+  onLevelChange,
 }: SetRowProps) {
   const proposalLabel = getProposalLabel(goal);
   const amount = getSetAmount(goal);
@@ -58,26 +74,42 @@ export function SetRow({
         data-testid={`set-row-inputs-${setNumber}`}
         className="flex min-w-0 items-center gap-1 whitespace-nowrap"
       >
-        <WorkoutNumberInput
-          value={goal.reps || null}
-          onChange={(value) => onRepsChange(value ?? 0)}
-          placeholder="Reps"
-          min={0}
-          className={`
-            h-8 w-[2.7rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
-            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
-          `}
-        />
-        <span className="text-text-muted text-xs">x</span>
-        <WorkoutNumberInput
-          value={goal.weight || null}
-          onChange={(value) => onWeightChange(value ?? 0)}
-          placeholder="lbs"
-          className={`
-            h-8 w-[3.2rem] rounded-md bg-surface-overlay/70 px-1 py-1 text-center text-sm text-text-primary
-            placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none transition-colors
-          `}
-        />
+        {goal.mode === "strength" ? (
+          <>
+            <WorkoutNumberInput
+              value={goal.reps || null}
+              onChange={(value) => onRepsChange?.(value ?? 0)}
+              placeholder="Reps"
+              min={0}
+              className={`${inputBaseClass} w-[2.7rem]`}
+            />
+            <span className="text-text-muted text-xs">x</span>
+            <WorkoutNumberInput
+              value={goal.weight || null}
+              onChange={(value) => onWeightChange?.(value ?? 0)}
+              placeholder="lbs"
+              className={`${inputBaseClass} w-[3.2rem]`}
+            />
+          </>
+        ) : (
+          <>
+            <WorkoutNumberInput
+              value={goal.seconds || null}
+              onChange={(value) => onSecondsChange?.(value ?? 0)}
+              placeholder="sec"
+              min={0}
+              className={`${inputBaseClass} w-[3.2rem]`}
+            />
+            <span className="text-text-muted text-xs">@</span>
+            <WorkoutNumberInput
+              value={goal.level || null}
+              onChange={(value) => onLevelChange?.(value ?? 0)}
+              placeholder="lvl"
+              min={0}
+              className={`${inputBaseClass} w-[2.7rem]`}
+            />
+          </>
+        )}
         <span className="text-text-muted text-xs">x</span>
         <div className="relative shrink-0">
           <select

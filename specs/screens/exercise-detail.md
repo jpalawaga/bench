@@ -57,7 +57,9 @@ Each history card can include:
 - workout start date and time
 - superset label if the exercise was part of a multi-exercise block
 - comma-separated superset partner names
-- compact set summary using actual values, falling back to goals if actuals are blank
+- compact set summary in the exercise's tracking mode:
+  - strength entries render as `reps x weight` per set, using the actual values and substituting `—` for any blank metric
+  - cardio entries render as `duration·Llevel` per set, again substituting `—` when a metric is blank
 - per-session working note text if it exists
 
 ## Editing Constraints

@@ -3,11 +3,17 @@ import type {
   ExerciseSet,
   ID,
   SetGoal,
+  TrackingMode,
   Workout,
 } from "@/types/models";
 import { db } from "./database";
 import { exerciseMatchesQuery } from "./exerciseSearch";
 import { SEED_EXERCISES } from "./seed";
+import {
+  normalizeBlockExercise,
+  normalizeExercise,
+  normalizeWorkout,
+} from "./migrations";
 
 export interface ExerciseNoteHistoryEntry {
   note: string;
@@ -46,8 +52,14 @@ export interface WorkoutRepository {
   getLastPerformedDates(): Promise<Record<ID, number>>;
 
   // Goal lookup
-  getLastActuals(exerciseId: ID): Promise<ExerciseSet[] | undefined>;
-  getNextSessionTargets(exerciseId: ID): Promise<SetGoal[] | undefined>;
+  getLastActuals(
+    exerciseId: ID,
+    mode: TrackingMode,
+  ): Promise<ExerciseSet[] | undefined>;
+  getNextSessionTargets(
+    exerciseId: ID,
+    mode: TrackingMode,
+  ): Promise<SetGoal[] | undefined>;
   getRecentExerciseNotes(
     exerciseId: ID,
     limit: number,
@@ -55,19 +67,18 @@ export interface WorkoutRepository {
   getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]>;
 }
 
+function normalizeExerciseOrFallback(raw: unknown): Exercise | undefined {
+  const normalized = normalizeExercise(raw);
+  return normalized ?? undefined;
+}
+
+function normalizeWorkoutOrFallback(raw: unknown): Workout | undefined {
+  const normalized = normalizeWorkout(raw);
+  return normalized ?? undefined;
+}
+
 class DexieWorkoutRepository implements WorkoutRepository {
   private seeded = false;
-
-  private normalizeWorkout(workout: Workout): Workout {
-    return {
-      ...workout,
-      notes: workout.notes ?? "",
-      blocks: workout.blocks.map((block) => ({
-        ...block,
-        notes: block.notes ?? "",
-      })),
-    };
-  }
 
   private async ensureSeeded(): Promise<void> {
     if (this.seeded) return;
@@ -79,17 +90,21 @@ class DexieWorkoutRepository implements WorkoutRepository {
   }
 
   async saveWorkout(workout: Workout): Promise<void> {
-    await db.workouts.put(this.normalizeWorkout(workout));
+    const normalized = normalizeWorkout(workout);
+    if (!normalized) return;
+    await db.workouts.put(normalized);
   }
 
   async getWorkout(id: ID): Promise<Workout | undefined> {
     const workout = await db.workouts.get(id);
-    return workout ? this.normalizeWorkout(workout) : undefined;
+    return normalizeWorkoutOrFallback(workout);
   }
 
   async getAllWorkouts(): Promise<Workout[]> {
     const workouts = await db.workouts.orderBy("startedAt").reverse().toArray();
-    return workouts.map((workout) => this.normalizeWorkout(workout));
+    return workouts
+      .map((w) => normalizeWorkout(w))
+      .filter((w): w is Workout => w !== null);
   }
 
   async deleteWorkout(id: ID): Promise<void> {
@@ -98,17 +113,21 @@ class DexieWorkoutRepository implements WorkoutRepository {
 
   async getActiveWorkout(): Promise<Workout | undefined> {
     const workout = await db.workouts.where("status").equals("active").first();
-    return workout ? this.normalizeWorkout(workout) : undefined;
+    return normalizeWorkoutOrFallback(workout);
   }
 
   async getAllExercises(): Promise<Exercise[]> {
     await this.ensureSeeded();
-    return db.exercises.orderBy("name").toArray();
+    const raw = await db.exercises.orderBy("name").toArray();
+    return raw
+      .map((ex) => normalizeExercise(ex))
+      .filter((ex): ex is Exercise => ex !== null);
   }
 
   async getExercise(id: ID): Promise<Exercise | undefined> {
     await this.ensureSeeded();
-    return db.exercises.get(id);
+    const raw = await db.exercises.get(id);
+    return normalizeExerciseOrFallback(raw);
   }
 
   async searchExercises(query: string): Promise<Exercise[]> {
@@ -116,9 +135,12 @@ class DexieWorkoutRepository implements WorkoutRepository {
     if (!query.trim()) {
       return this.getAllExercises();
     }
-    return db.exercises
+    const raw = await db.exercises
       .filter((ex) => exerciseMatchesQuery(ex, query))
       .sortBy("name");
+    return raw
+      .map((ex) => normalizeExercise(ex))
+      .filter((ex): ex is Exercise => ex !== null);
   }
 
   async addExercise(exercise: Exercise): Promise<void> {
@@ -162,9 +184,10 @@ class DexieWorkoutRepository implements WorkoutRepository {
       .slice(0, limit)
       .map(([id]) => id);
 
-    // Fetch the Exercise objects and preserve frequency order
-    const exercises = await db.exercises.bulkGet(topIds);
-    return exercises.filter((e): e is Exercise => e !== undefined);
+    const raw = await db.exercises.bulkGet(topIds);
+    return raw
+      .map((ex) => (ex ? normalizeExercise(ex) : null))
+      .filter((ex): ex is Exercise => ex !== null);
   }
 
   async getLastPerformedDates(): Promise<Record<ID, number>> {
@@ -190,7 +213,10 @@ class DexieWorkoutRepository implements WorkoutRepository {
     return dates;
   }
 
-  async getLastActuals(exerciseId: ID): Promise<ExerciseSet[] | undefined> {
+  async getLastActuals(
+    exerciseId: ID,
+    mode: TrackingMode,
+  ): Promise<ExerciseSet[] | undefined> {
     const workouts = await db.workouts
       .where("status")
       .equals("completed")
@@ -200,10 +226,16 @@ class DexieWorkoutRepository implements WorkoutRepository {
     for (const workout of workouts) {
       for (const block of workout.blocks) {
         if (block.status !== "finished") continue;
-        const match = block.exercises.find(
+        const rawMatch = block.exercises.find(
           (ex) => ex.exerciseId === exerciseId,
         );
-        if (match) return match.sets;
+        if (!rawMatch) continue;
+
+        const match = normalizeBlockExercise(rawMatch);
+        if (!match) continue;
+        if (match.sets.length === 0) continue;
+        if (match.sets[0]?.goal.mode !== mode) continue;
+        return match.sets;
       }
     }
     return undefined;
@@ -211,6 +243,7 @@ class DexieWorkoutRepository implements WorkoutRepository {
 
   async getNextSessionTargets(
     exerciseId: ID,
+    mode: TrackingMode,
   ): Promise<SetGoal[] | undefined> {
     const workouts = await db.workouts
       .where("status")
@@ -221,10 +254,15 @@ class DexieWorkoutRepository implements WorkoutRepository {
     for (const workout of workouts) {
       for (const block of workout.blocks) {
         if (block.status !== "finished") continue;
-        const match = block.exercises.find(
+        const rawMatch = block.exercises.find(
           (ex) => ex.exerciseId === exerciseId,
         );
-        if (match?.nextSessionTargets) return match.nextSessionTargets;
+        if (!rawMatch) continue;
+
+        const match = normalizeBlockExercise(rawMatch);
+        if (!match?.nextSessionTargets?.length) continue;
+        if (match.nextSessionTargets[0]?.mode !== mode) continue;
+        return match.nextSessionTargets;
       }
     }
     return undefined;
@@ -234,11 +272,14 @@ class DexieWorkoutRepository implements WorkoutRepository {
     exerciseId: ID,
     limit: number,
   ): Promise<ExerciseNoteHistoryEntry[]> {
-    const workouts = (await db.workouts
+    const rawWorkouts = await db.workouts
       .where("status")
       .equals("completed")
       .reverse()
-      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
+      .sortBy("startedAt");
+    const workouts = rawWorkouts
+      .map((w) => normalizeWorkout(w))
+      .filter((w): w is Workout => w !== null);
 
     const entries: ExerciseNoteHistoryEntry[] = [];
 
@@ -266,11 +307,14 @@ class DexieWorkoutRepository implements WorkoutRepository {
   }
 
   async getExerciseHistory(exerciseId: ID): Promise<ExerciseHistoryEntry[]> {
-    const workouts = (await db.workouts
+    const rawWorkouts = await db.workouts
       .where("status")
       .equals("completed")
       .reverse()
-      .sortBy("startedAt")).map((workout) => this.normalizeWorkout(workout));
+      .sortBy("startedAt");
+    const workouts = rawWorkouts
+      .map((w) => normalizeWorkout(w))
+      .filter((w): w is Workout => w !== null);
 
     const entries: ExerciseHistoryEntry[] = [];
 

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type { Workout } from "@/types/models";
 import {
+  formatActualMetrics,
   formatDate,
   formatDuration,
+  formatGoalMetrics,
   formatWorkoutForClipboard,
 } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -90,12 +92,11 @@ export function WorkoutDetail({
                           S{set.setNumber}
                         </span>
                         <span className="text-text-secondary">
-                          Goal: {set.goal.reps}x{set.goal.weight}
+                          Goal: {formatGoalMetrics(set.goal)}
                         </span>
                         <span className="text-text-muted">&rarr;</span>
                         <span className="text-text-primary">
-                          {set.actual.reps ?? "—"}x
-                          {set.actual.weight ?? "—"}
+                          {formatActualMetrics(set.actual, set.goal)}
                         </span>
                       </div>
                     ))}

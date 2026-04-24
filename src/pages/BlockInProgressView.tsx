@@ -12,8 +12,18 @@ import {
   repository,
   type ExerciseNoteHistoryEntry,
 } from "@/db/repository";
-import { formatDateTime } from "@/lib/utils";
-import type { Exercise } from "@/types/models";
+import {
+  formatDateTime,
+  formatDurationCompact,
+  formatGoalMetrics,
+  isSetActualComplete,
+} from "@/lib/utils";
+import type {
+  CardioSetActual,
+  Exercise,
+  ExerciseSet,
+  StrengthSetActual,
+} from "@/types/models";
 
 type NotesMode = "hidden" | "view";
 type ExerciseTransitionDirection = "forward" | "backward";
@@ -25,6 +35,9 @@ interface ExerciseTransitionState {
 }
 
 const EXERCISE_TRANSITION_MS = 220;
+
+type StrengthField = "reps" | "weight";
+type CardioField = "seconds" | "level";
 
 export function BlockInProgressView() {
   const workout = useWorkoutStore((s) => s.workout);
@@ -228,13 +241,13 @@ export function BlockInProgressView() {
   const getInputKey = (
     exerciseIndex: number,
     setIndex: number,
-    field: "reps" | "weight",
+    field: StrengthField | CardioField,
   ) => `${exerciseIndex}-${setIndex}-${field}`;
 
   const focusInput = (
     exerciseIndex: number,
     setIndex: number,
-    field: "reps" | "weight",
+    field: StrengthField | CardioField,
   ) => {
     inputRefs.current[getInputKey(exerciseIndex, setIndex, field)]?.focus();
   };
@@ -247,16 +260,51 @@ export function BlockInProgressView() {
     return getFirstIncompleteSetIndex(block.exercises[exerciseIndex]);
   };
 
+  const updateStrengthActual = (
+    exerciseIndex: number,
+    setIndex: number,
+    patch: Partial<Pick<StrengthSetActual, "reps" | "weight">>,
+  ) => {
+    const set = block.exercises[exerciseIndex]?.sets[setIndex];
+    if (!set || set.actual.mode !== "strength") return;
+    recordActual(exerciseIndex, setIndex, {
+      mode: "strength",
+      reps: patch.reps !== undefined ? patch.reps : set.actual.reps,
+      weight: patch.weight !== undefined ? patch.weight : set.actual.weight,
+    });
+  };
+
+  const updateCardioActual = (
+    exerciseIndex: number,
+    setIndex: number,
+    patch: Partial<Pick<CardioSetActual, "seconds" | "level">>,
+  ) => {
+    const set = block.exercises[exerciseIndex]?.sets[setIndex];
+    if (!set || set.actual.mode !== "cardio") return;
+    recordActual(exerciseIndex, setIndex, {
+      mode: "cardio",
+      seconds: patch.seconds !== undefined ? patch.seconds : set.actual.seconds,
+      level: patch.level !== undefined ? patch.level : set.actual.level,
+    });
+  };
+
   const completeSet = (exerciseIndex: number, setIndex: number) => {
     const set = block.exercises[exerciseIndex]?.sets[setIndex];
     if (!set) return;
 
-    recordActual(
-      exerciseIndex,
-      setIndex,
-      set.actual.reps ?? set.goal.reps,
-      set.actual.weight ?? set.goal.weight,
-    );
+    if (set.goal.mode === "strength" && set.actual.mode === "strength") {
+      recordActual(exerciseIndex, setIndex, {
+        mode: "strength",
+        reps: set.actual.reps ?? set.goal.reps,
+        weight: set.actual.weight ?? set.goal.weight,
+      });
+    } else if (set.goal.mode === "cardio" && set.actual.mode === "cardio") {
+      recordActual(exerciseIndex, setIndex, {
+        mode: "cardio",
+        seconds: set.actual.seconds ?? set.goal.seconds,
+        level: set.actual.level ?? set.goal.level,
+      });
+    }
     advanceActiveSet(exerciseIndex, setIndex);
     setTimerStartSignal((prev) => prev + 1);
   };
@@ -315,6 +363,106 @@ export function BlockInProgressView() {
       const caretPosition = textarea.value.length;
       textarea.setSelectionRange(caretPosition, caretPosition);
     });
+  };
+
+  const renderSetInputs = (
+    exerciseIndex: number,
+    setIndex: number,
+    set: ExerciseSet,
+  ) => {
+    if (set.goal.mode === "strength" && set.actual.mode === "strength") {
+      return (
+        <div className="flex items-center gap-1 flex-1">
+          <WorkoutNumberInput
+            value={set.actual.reps}
+            onActivate={() => setActiveSet(exerciseIndex, setIndex)}
+            onChange={(value) =>
+              updateStrengthActual(exerciseIndex, setIndex, { reps: value })
+            }
+            placeholder={String(set.goal.reps)}
+            fallbackValue={set.goal.reps}
+            min={0}
+            enterKeyHint="next"
+            onSubmit={() => {
+              setActiveSet(exerciseIndex, setIndex);
+              focusInput(exerciseIndex, setIndex, "weight");
+            }}
+            externalRef={(node) => {
+              inputRefs.current[getInputKey(exerciseIndex, setIndex, "reps")] = node;
+            }}
+            className="h-9 w-14 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
+          />
+          <span className="text-text-muted text-sm">x</span>
+          <WorkoutNumberInput
+            value={set.actual.weight}
+            onActivate={() => setActiveSet(exerciseIndex, setIndex)}
+            onChange={(value) =>
+              updateStrengthActual(exerciseIndex, setIndex, { weight: value })
+            }
+            placeholder={String(set.goal.weight)}
+            fallbackValue={set.goal.weight}
+            enterKeyHint="done"
+            onSubmit={() => completeSet(exerciseIndex, setIndex)}
+            externalRef={(node) => {
+              inputRefs.current[getInputKey(exerciseIndex, setIndex, "weight")] = node;
+            }}
+            className="h-9 w-18 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
+          />
+        </div>
+      );
+    }
+
+    if (set.goal.mode === "cardio" && set.actual.mode === "cardio") {
+      return (
+        <div className="flex items-center gap-1 flex-1">
+          <WorkoutNumberInput
+            value={set.actual.seconds}
+            onActivate={() => setActiveSet(exerciseIndex, setIndex)}
+            onChange={(value) =>
+              updateCardioActual(exerciseIndex, setIndex, { seconds: value })
+            }
+            placeholder={String(set.goal.seconds)}
+            fallbackValue={set.goal.seconds}
+            min={0}
+            enterKeyHint="next"
+            onSubmit={() => {
+              setActiveSet(exerciseIndex, setIndex);
+              focusInput(exerciseIndex, setIndex, "level");
+            }}
+            externalRef={(node) => {
+              inputRefs.current[getInputKey(exerciseIndex, setIndex, "seconds")] = node;
+            }}
+            className="h-9 w-18 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
+          />
+          <span className="text-text-muted text-sm">@</span>
+          <WorkoutNumberInput
+            value={set.actual.level}
+            onActivate={() => setActiveSet(exerciseIndex, setIndex)}
+            onChange={(value) =>
+              updateCardioActual(exerciseIndex, setIndex, { level: value })
+            }
+            placeholder={String(set.goal.level)}
+            fallbackValue={set.goal.level}
+            min={0}
+            enterKeyHint="done"
+            onSubmit={() => completeSet(exerciseIndex, setIndex)}
+            externalRef={(node) => {
+              inputRefs.current[getInputKey(exerciseIndex, setIndex, "level")] = node;
+            }}
+            className="h-9 w-14 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderGoalSummary = (set: ExerciseSet) => {
+    if (set.goal.mode === "cardio") {
+      return `${formatDurationCompact(set.goal.seconds)}·L${set.goal.level}`;
+    }
+    return formatGoalMetrics(set.goal);
   };
 
   const renderExercisePane = (
@@ -427,8 +575,7 @@ export function BlockInProgressView() {
           </div>
 
           {exercise.sets.map((set, si) => {
-            const isFilled =
-              set.actual.reps != null && set.actual.weight != null;
+            const isFilled = isSetActualComplete(set.actual);
             const isActiveSet = resolveActiveSetIndex(exerciseIndex) === si;
 
             return (
@@ -467,60 +614,14 @@ export function BlockInProgressView() {
                 </span>
 
                 <span className="text-text-muted text-sm w-16 text-center shrink-0">
-                  {set.goal.reps}x{set.goal.weight}
+                  {renderGoalSummary(set)}
                 </span>
 
                 <span className="w-4 shrink-0 text-center text-text-muted text-xs">
                   &rarr;
                 </span>
 
-                <div className="flex items-center gap-1 flex-1">
-                  <WorkoutNumberInput
-                    value={set.actual.reps}
-                    onActivate={() => setActiveSet(exerciseIndex, si)}
-                    onChange={(value) =>
-                      recordActual(
-                        exerciseIndex,
-                        si,
-                        value,
-                        set.actual.weight,
-                      )
-                    }
-                    placeholder={String(set.goal.reps)}
-                    fallbackValue={set.goal.reps}
-                    min={0}
-                    enterKeyHint="next"
-                    onSubmit={() => {
-                      setActiveSet(exerciseIndex, si);
-                      focusInput(exerciseIndex, si, "weight");
-                    }}
-                    externalRef={(node) => {
-                      inputRefs.current[getInputKey(exerciseIndex, si, "reps")] = node;
-                    }}
-                    className="h-9 w-14 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
-                  />
-                  <span className="text-text-muted text-sm">x</span>
-                  <WorkoutNumberInput
-                    value={set.actual.weight}
-                    onActivate={() => setActiveSet(exerciseIndex, si)}
-                    onChange={(value) =>
-                      recordActual(
-                        exerciseIndex,
-                        si,
-                        set.actual.reps,
-                        value,
-                      )
-                    }
-                    placeholder={String(set.goal.weight)}
-                    fallbackValue={set.goal.weight}
-                    enterKeyHint="done"
-                    onSubmit={() => completeSet(exerciseIndex, si)}
-                    externalRef={(node) => {
-                      inputRefs.current[getInputKey(exerciseIndex, si, "weight")] = node;
-                    }}
-                    className="h-9 w-18 rounded-sm bg-surface-overlay/70 px-1.5 py-1 text-center text-base text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
-                  />
-                </div>
+                {renderSetInputs(exerciseIndex, si, set)}
 
                 {exercise.sets.length > 1 && (
                   <button

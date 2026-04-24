@@ -14,6 +14,7 @@ function createSet(setNumber: number): EditableSetGoal {
     id: `set-${setNumber}`,
     setNumber,
     goal: {
+      mode: "strength",
       reps: 8,
       weight: 135,
       amount: 1,
@@ -117,6 +118,7 @@ describe("GoalSetEditor", () => {
             id: "set-1",
             setNumber: 1,
             goal: {
+              mode: "strength",
               reps: 8,
               weight: 135,
               amount: 1,
@@ -128,6 +130,7 @@ describe("GoalSetEditor", () => {
             id: "set-2",
             setNumber: 2,
             goal: {
+              mode: "strength",
               reps: 8,
               weight: 135,
               amount: 1,

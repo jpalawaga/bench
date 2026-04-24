@@ -30,7 +30,9 @@ Each exercise starts collapsed.
 ### Expanded state
 
 - muted `For Next Time` eyebrow and exercise name
-- editable rows for reps, weight, and grouped count
+- editable rows matching the exercise's tracking mode:
+  - strength exercises: reps, weight, and grouped count
+  - cardio exercises: duration (seconds), level, and grouped count
 - `+ Add Set` action
 - per-row remove buttons when more than one row exists
 - shared goal rows stay compact on narrow phones instead of wrapping into stacked multi-line rows

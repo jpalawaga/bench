@@ -1,6 +1,18 @@
 import { create } from "zustand";
-import type { Block, BlockExercise, Workout } from "@/types/models";
-import { generateId } from "@/lib/utils";
+import type {
+  Block,
+  BlockExercise,
+  SetActual,
+  TrackingMode,
+  Workout,
+} from "@/types/models";
+import {
+  emptyActualForMode,
+  emptyGoalForMode,
+  generateId,
+  isSetActualComplete,
+} from "@/lib/utils";
+import { normalizeWorkout } from "@/db/migrations";
 import { repository } from "@/db/repository";
 
 export type WorkoutView =
@@ -20,6 +32,7 @@ interface WorkoutState {
   activeSetIndex: number | null;
   pendingExerciseId: string | null;
   pendingExerciseName: string | null;
+  pendingExerciseMode: TrackingMode | null;
 
   // Actions
   loadWorkout: (workout: Workout) => void;
@@ -30,7 +43,7 @@ interface WorkoutState {
   addExerciseToBlock: (exercise: BlockExercise) => void;
   removeExerciseFromBlock: (exerciseId: string) => void;
   setRestTimer: (seconds: number | null) => void;
-  setPendingExercise: (id: string, name: string) => void;
+  setPendingExercise: (id: string, name: string, mode: TrackingMode) => void;
   setActiveSet: (exerciseIndex: number | null, setIndex: number | null) => void;
   advanceActiveSet: (
     exerciseIndex: number,
@@ -40,8 +53,7 @@ interface WorkoutState {
   recordActual: (
     exerciseIndex: number,
     setIndex: number,
-    reps: number | null,
-    weight: number | null,
+    actual: SetActual,
   ) => void;
   addSetToExercise: (exerciseIndex: number) => void;
   removeSetFromExercise: (exerciseIndex: number, setIndex: number) => void;
@@ -56,20 +68,14 @@ interface WorkoutState {
   reset: () => void;
 }
 
-function normalizeWorkout(workout: Workout): Workout {
-  return {
-    ...workout,
-    notes: workout.notes ?? "",
-    blocks: workout.blocks.map((block) => ({
-      ...block,
-      notes: block.notes ?? "",
-    })),
-  };
+function ensureNormalized(workout: Workout): Workout {
+  return normalizeWorkout(workout) ?? workout;
 }
 
 function isSetIncomplete(exercise: BlockExercise, setIndex: number): boolean {
   const set = exercise.sets[setIndex];
-  return Boolean(set && (set.actual.reps == null || set.actual.weight == null));
+  if (!set) return false;
+  return !isSetActualComplete(set.actual);
 }
 
 export function getFirstIncompleteSetIndex(
@@ -78,7 +84,7 @@ export function getFirstIncompleteSetIndex(
   if (!exercise) return null;
 
   const firstIncompleteIndex = exercise.sets.findIndex(
-    (set) => set.actual.reps == null || set.actual.weight == null,
+    (set) => !isSetActualComplete(set.actual),
   );
 
   return firstIncompleteIndex >= 0 ? firstIncompleteIndex : null;
@@ -118,10 +124,11 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   activeSetIndex: null,
   pendingExerciseId: null,
   pendingExerciseName: null,
+  pendingExerciseMode: null,
 
   loadWorkout: (workout) =>
     set({
-      workout: normalizeWorkout(workout),
+      workout: ensureNormalized(workout),
       currentView: "block-list",
       activeSetExerciseIndex: null,
       activeSetIndex: null,
@@ -132,7 +139,6 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   addBlock: () => {
     const { workout } = get();
     if (!workout) return;
-    // Carry forward rest timer from the last block
     const lastBlock = workout.blocks[workout.blocks.length - 1];
     const block: Block = {
       id: generateId(),
@@ -199,6 +205,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       currentView: "new-block",
       pendingExerciseId: null,
       pendingExerciseName: null,
+      pendingExerciseMode: null,
     });
     get().persist();
   },
@@ -232,10 +239,11 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     get().persist();
   },
 
-  setPendingExercise: (id, name) =>
+  setPendingExercise: (id, name, mode) =>
     set({
       pendingExerciseId: id,
       pendingExerciseName: name,
+      pendingExerciseMode: mode,
       currentView: "goal-setting",
     }),
 
@@ -296,7 +304,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     get().persist();
   },
 
-  recordActual: (exerciseIndex, setIndex, reps, weight) => {
+  recordActual: (exerciseIndex, setIndex, actual) => {
     const { workout, activeBlockIndex } = get();
     if (!workout) return;
     const blocks = workout.blocks.map((b, i) => {
@@ -304,7 +312,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       const exercises = b.exercises.map((ex, ei) => {
         if (ei !== exerciseIndex) return ex;
         const sets = ex.sets.map((s, si) =>
-          si === setIndex ? { ...s, actual: { reps, weight } } : s,
+          si === setIndex ? { ...s, actual } : s,
         );
         return { ...ex, sets };
       });
@@ -333,13 +341,15 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       const exercises = b.exercises.map((ex, ei) => {
         if (ei !== exerciseIndex) return ex;
         const lastSet = ex.sets[ex.sets.length - 1];
+        const mode: TrackingMode = lastSet?.goal.mode ?? "strength";
+        const newGoal = lastSet
+          ? { ...lastSet.goal, amount: 1, isProposed: false }
+          : { ...emptyGoalForMode(mode), amount: 1 };
         const newSet = {
           id: generateId(),
           setNumber: ex.sets.length + 1,
-          goal: lastSet
-            ? { ...lastSet.goal, amount: 1, isProposed: false }
-            : { reps: 0, weight: 0, amount: 1, isProposed: false },
-          actual: { reps: null, weight: null },
+          goal: newGoal,
+          actual: emptyActualForMode(newGoal.mode),
         };
         return { ...ex, sets: [...ex.sets, newSet] };
       });
@@ -449,6 +459,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       activeSetIndex: null,
       pendingExerciseId: null,
       pendingExerciseName: null,
+      pendingExerciseMode: null,
     });
   },
 
@@ -469,5 +480,6 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       activeSetIndex: null,
       pendingExerciseId: null,
       pendingExerciseName: null,
+      pendingExerciseMode: null,
     }),
 }));

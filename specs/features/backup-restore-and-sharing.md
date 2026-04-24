@@ -23,12 +23,21 @@ This feature area covers:
 The backup payload is the full local database in JSON:
 
 - `format: "benchpress-backup"`
-- `version: 1`
+- `version: 2`
 - `exportedAt`
 - `workouts`
 - `exercises`
 
 This is a snapshot format, not an event log and not a partial export.
+
+### Version compatibility
+
+Import accepts any supported backup version and always writes in the current shape:
+
+- `version: 1` backups pre-date the tracking-mode model. On import, each exercise is tagged with `trackingMode` using the same legacy-name inference as the v1-to-v2 database migration, and each stored `SetGoal` / `SetActual` is rewritten to the discriminated-union shape with `mode: "strength"` by default.
+- `version: 2` backups are imported as-is, after re-running the same normalization defensively.
+
+Export always emits the current version. Older builds cannot read a v2 backup.
 
 ## Backup Panel Behavior
 
@@ -59,12 +68,12 @@ Behavior details:
 
 Import rejects payloads that do not match the benchpress backup schema. Validation includes:
 
-- backup metadata fields
+- backup metadata fields, including a supported `version` value
 - workout shape
 - exercise shape
-- nested blocks, sets, goals, and actuals
+- nested blocks, sets, goals, and actuals in either the legacy flat shape or the mode-tagged discriminated-union shape
 
-The import path is strict by design because a restore fully replaces local data.
+The import path is strict by design because a restore fully replaces local data. An entry that fails normalization aborts the import before any write occurs.
 
 ## Workout Clipboard Export
 
@@ -75,7 +84,8 @@ The exported text format is intentionally plain:
 - first line is the workout date
 - each exercise becomes a line
 - supersets use box-drawing prefixes to show grouped exercises
-- each line contains the exercise name and a compressed set sequence
+- each line contains the exercise name and a compressed set sequence where every set renders as a mode-specific token (`reps@weight` for strength, `duration@Llevel` for cardio)
+- consecutive identical tokens within one line are compressed with `xN`
 
 This is optimized for pasting into notes, messages, or chat.
 

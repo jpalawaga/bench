@@ -1,20 +1,14 @@
 import { db } from "./database";
-import type {
-  Block,
-  BlockExercise,
-  Exercise,
-  ExerciseSet,
-  SetActual,
-  SetGoal,
-  Workout,
-} from "@/types/models";
+import type { Exercise, Workout } from "@/types/models";
+import { normalizeExercise, normalizeWorkout } from "./migrations";
 
 const BACKUP_FORMAT = "benchpress-backup";
-const BACKUP_VERSION = 1;
+const CURRENT_BACKUP_VERSION = 2;
+const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2]);
 
 export interface DatabaseBackup {
   format: typeof BACKUP_FORMAT;
-  version: typeof BACKUP_VERSION;
+  version: typeof CURRENT_BACKUP_VERSION;
   exportedAt: number;
   workouts: Workout[];
   exercises: Exercise[];
@@ -33,123 +27,42 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function isString(value: unknown): value is string {
-  return typeof value === "string";
+interface BackupEnvelope {
+  format: typeof BACKUP_FORMAT;
+  version: number;
+  exportedAt: number;
+  workouts: unknown[];
+  exercises: unknown[];
 }
 
-function isSetGoal(value: unknown): value is SetGoal {
-  if (!isRecord(value)) return false;
-
+function hasBackupEnvelope(value: unknown): value is BackupEnvelope {
   return (
-    isFiniteNumber(value.reps) &&
-    isFiniteNumber(value.weight) &&
-    typeof value.isProposed === "boolean" &&
-    (value.amount === undefined || isFiniteNumber(value.amount)) &&
-    (value.proposalSource === undefined ||
-      value.proposalSource === "planned" ||
-      value.proposalSource === "previous")
-  );
-}
-
-function isSetActual(value: unknown): value is SetActual {
-  if (!isRecord(value)) return false;
-
-  return (
-    (value.reps === null || isFiniteNumber(value.reps)) &&
-    (value.weight === null || isFiniteNumber(value.weight))
-  );
-}
-
-function isExerciseSet(value: unknown): value is ExerciseSet {
-  if (!isRecord(value)) return false;
-
-  return (
-    isString(value.id) &&
-    isFiniteNumber(value.setNumber) &&
-    isSetGoal(value.goal) &&
-    isSetActual(value.actual)
-  );
-}
-
-function isBlockExercise(value: unknown): value is BlockExercise {
-  if (!isRecord(value) || !Array.isArray(value.sets)) return false;
-
-  return (
-    isString(value.id) &&
-    isString(value.exerciseId) &&
-    isString(value.exerciseName) &&
-    isString(value.notes) &&
-    value.sets.every(isExerciseSet) &&
-    (value.nextSessionTargets === undefined ||
-      (Array.isArray(value.nextSessionTargets) &&
-        value.nextSessionTargets.every(isSetGoal)))
-  );
-}
-
-function isBlock(value: unknown): value is Block {
-  if (!isRecord(value) || !Array.isArray(value.exercises)) return false;
-
-  return (
-    isString(value.id) &&
-    isFiniteNumber(value.order) &&
-    (value.status === "planning" ||
-      value.status === "in-progress" ||
-      value.status === "finished") &&
-    (value.restTimerSeconds === null || isFiniteNumber(value.restTimerSeconds)) &&
-    (value.notes === undefined || isString(value.notes)) &&
-    value.exercises.every(isBlockExercise)
-  );
-}
-
-function isWorkout(value: unknown): value is Workout {
-  if (!isRecord(value) || !Array.isArray(value.blocks)) return false;
-
-  return (
-    isString(value.id) &&
-    (value.status === "active" || value.status === "completed") &&
-    isFiniteNumber(value.startedAt) &&
-    (value.completedAt === null || isFiniteNumber(value.completedAt)) &&
-    (value.notes === undefined || isString(value.notes)) &&
-    value.blocks.every(isBlock)
-  );
-}
-
-function isExercise(value: unknown): value is Exercise {
-  if (!isRecord(value)) return false;
-
-  return (
-    isString(value.id) &&
-    isString(value.name) &&
-    typeof value.isCustom === "boolean" &&
-    (value.muscleGroup === undefined || isString(value.muscleGroup)) &&
-    (value.formNotes === undefined || isString(value.formNotes))
-  );
-}
-
-function isDatabaseBackup(value: unknown): value is DatabaseBackup {
-  if (!isRecord(value)) return false;
-  if (!Array.isArray(value.workouts) || !Array.isArray(value.exercises)) {
-    return false;
-  }
-
-  return (
+    isRecord(value) &&
     value.format === BACKUP_FORMAT &&
-    value.version === BACKUP_VERSION &&
+    typeof value.version === "number" &&
+    SUPPORTED_BACKUP_VERSIONS.has(value.version) &&
     isFiniteNumber(value.exportedAt) &&
-    value.workouts.every(isWorkout) &&
-    value.exercises.every(isExercise)
+    Array.isArray(value.workouts) &&
+    Array.isArray(value.exercises)
   );
 }
 
 export async function createDatabaseBackup(): Promise<DatabaseBackup> {
-  const [workouts, exercises] = await Promise.all([
+  const [rawWorkouts, rawExercises] = await Promise.all([
     db.workouts.toArray(),
     db.exercises.toArray(),
   ]);
 
+  const workouts = rawWorkouts
+    .map((w) => normalizeWorkout(w))
+    .filter((w): w is Workout => w !== null);
+  const exercises = rawExercises
+    .map((ex) => normalizeExercise(ex))
+    .filter((ex): ex is Exercise => ex !== null);
+
   return {
     format: BACKUP_FORMAT,
-    version: BACKUP_VERSION,
+    version: CURRENT_BACKUP_VERSION,
     exportedAt: Date.now(),
     workouts,
     exercises,
@@ -170,11 +83,29 @@ export function parseDatabaseBackup(json: string): DatabaseBackup {
     throw new Error("Backup JSON is not valid JSON.");
   }
 
-  if (!isDatabaseBackup(parsed)) {
+  if (!hasBackupEnvelope(parsed)) {
     throw new Error("Backup JSON does not match the Benchpress backup format.");
   }
 
-  return parsed;
+  const workouts = parsed.workouts
+    .map((w) => normalizeWorkout(w))
+    .filter((w): w is Workout => w !== null);
+  const exercises = parsed.exercises
+    .map((ex) => normalizeExercise(ex))
+    .filter((ex): ex is Exercise => ex !== null);
+
+  if (workouts.length !== parsed.workouts.length ||
+      exercises.length !== parsed.exercises.length) {
+    throw new Error("Backup JSON contains entries that could not be parsed.");
+  }
+
+  return {
+    format: BACKUP_FORMAT,
+    version: CURRENT_BACKUP_VERSION,
+    exportedAt: parsed.exportedAt,
+    workouts,
+    exercises,
+  };
 }
 
 export async function importDatabaseBackup(

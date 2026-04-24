@@ -1,8 +1,12 @@
-import type { Exercise } from "@/types/models";
+import type { Exercise, TrackingMode } from "@/types/models";
 import { generateId } from "@/lib/utils";
 
-function ex(name: string, muscleGroup: string): Exercise {
-  return { id: generateId(), name, isCustom: false, muscleGroup };
+function ex(
+  name: string,
+  muscleGroup: string,
+  trackingMode: TrackingMode = "strength",
+): Exercise {
+  return { id: generateId(), name, isCustom: false, muscleGroup, trackingMode };
 }
 
 export const SEED_EXERCISES: Exercise[] = [
@@ -70,7 +74,10 @@ export const SEED_EXERCISES: Exercise[] = [
   ex("Ab Wheel", "Core"),
 
   // Cardio / Conditioning
-  ex("Treadmill", "Cardio"),
-  ex("Rowing Machine", "Cardio"),
-  ex("Assault Bike", "Cardio"),
+  ex("Treadmill", "Cardio", "cardio"),
+  ex("Rowing Machine", "Cardio", "cardio"),
+  ex("Assault Bike", "Cardio", "cardio"),
+  ex("Stationary Bike", "Cardio", "cardio"),
+  ex("Stairmaster", "Cardio", "cardio"),
+  ex("Elliptical", "Cardio", "cardio"),
 ];

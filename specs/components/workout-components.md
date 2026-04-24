@@ -31,7 +31,7 @@ Summary card for one configured exercise inside a planning block.
 
 - exercise name
 - set count
-- compressed goal summary
+- compressed goal summary in the exercise's tracking mode (strength: `reps x weight`; cardio: `duration·Llevel`)
 
 ### Interaction
 
@@ -115,10 +115,11 @@ Shared explicit-row editor used in both:
 
 - grouped count can change through the per-row amount dropdown as well as add/remove row actions
 - set labels are derived from cumulative set order and may render a range like `S1-3`
-- adding a row duplicates the previous row's reps and weight while resetting the new row's amount to `1` and clearing proposal metadata
+- adding a row duplicates the previous row's metrics in the same mode while resetting the new row's amount to `1` and clearing proposal metadata
 - proposal badges and remove actions must remain visible on narrow screens; they cannot be pushed off-screen by the row inputs
 - rows should remain compact enough to stay on one line on narrow phones, using reduced badge chrome, tighter spacing between the set label and inputs, and narrower numeric controls rather than wrapping the set editor into multiple lines
 - when a proposal badge is present, it sits centered in the remaining space between the numeric inputs and the remove action rather than hugging the trailing edge
+- the editor does not mix modes: every row inside a single editor instance shares the same `mode`, inherited from the exercise being planned
 
 ## WorkoutNumberInput
 
@@ -143,16 +144,31 @@ This component changes how the app feels in use. A reimplementation should treat
 
 ### Purpose
 
-Reusable explicit goal row for shared set-goal editing.
+Reusable explicit goal row for shared set-goal editing. Branches its numeric inputs on `goal.mode`.
 
 ### Contents
 
+Strength rows (`goal.mode === "strength"`):
+
 - set label
 - reps input
-- weight input
+- weight input, separated from reps with `x`
 - grouped-count dropdown
 - proposal badge
 - optional remove button
+
+Cardio rows (`goal.mode === "cardio"`):
+
+- set label
+- duration (seconds) input
+- level input, separated from duration with `@`
+- grouped-count dropdown
+- proposal badge
+- optional remove button
+
+### Callback contract
+
+- the component accepts per-mode change callbacks (`onRepsChange`, `onWeightChange`, `onSecondsChange`, `onLevelChange`) plus shared `onAmountChange` and `onRemove`; callers only need to provide the callbacks that match the row's mode
 
 ### Proposal states
 

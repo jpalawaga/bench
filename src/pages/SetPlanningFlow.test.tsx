@@ -53,6 +53,7 @@ describe("set planning flows", () => {
       activeSetIndex: null,
       pendingExerciseId: "exercise-1",
       pendingExerciseName: "Bench Press",
+      pendingExerciseMode: "strength",
     });
 
     render(<GoalSettingView />);
@@ -74,8 +75,16 @@ describe("set planning flows", () => {
 
       expect(exercise).toBeTruthy();
       expect(exercise?.sets).toHaveLength(3);
-      expect(exercise?.sets.map((set) => set.goal.reps)).toEqual([8, 8, 8]);
-      expect(exercise?.sets.map((set) => set.goal.weight)).toEqual([45, 45, 45]);
+      expect(
+        exercise?.sets.map((set) =>
+          set.goal.mode === "strength" ? set.goal.reps : null,
+        ),
+      ).toEqual([8, 8, 8]);
+      expect(
+        exercise?.sets.map((set) =>
+          set.goal.mode === "strength" ? set.goal.weight : null,
+        ),
+      ).toEqual([45, 45, 45]);
       expect(exercise?.sets.map((set) => set.goal.amount)).toEqual([1, 1, 1]);
     });
   });
@@ -100,12 +109,14 @@ describe("set planning flows", () => {
               id: "set-1",
               setNumber: 1,
               goal: {
+                mode: "strength",
                 reps: 8,
                 weight: 45,
                 amount: 1,
                 isProposed: false,
               },
               actual: {
+                mode: "strength",
                 reps: 8,
                 weight: 45,
               },
@@ -114,12 +125,14 @@ describe("set planning flows", () => {
               id: "set-2",
               setNumber: 2,
               goal: {
+                mode: "strength",
                 reps: 8,
                 weight: 45,
                 amount: 1,
                 isProposed: false,
               },
               actual: {
+                mode: "strength",
                 reps: 8,
                 weight: 45,
               },
@@ -157,6 +170,7 @@ describe("set planning flows", () => {
           ?.nextSessionTargets,
       ).toEqual([
         {
+          mode: "strength",
           reps: 8,
           weight: 45,
           amount: 3,
