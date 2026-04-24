@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type {
   Block,
   BlockExercise,
+  ExerciseSet,
   SetActual,
   TrackingMode,
   Workout,
@@ -33,6 +34,7 @@ interface WorkoutState {
   pendingExerciseId: string | null;
   pendingExerciseName: string | null;
   pendingExerciseMode: TrackingMode | null;
+  editingExerciseIndex: number | null;
 
   // Actions
   loadWorkout: (workout: Workout) => void;
@@ -41,9 +43,12 @@ interface WorkoutState {
   removeBlock: (index: number) => void;
   setActiveBlock: (index: number) => void;
   addExerciseToBlock: (exercise: BlockExercise) => void;
+  updateExerciseSetsInBlock: (exerciseIndex: number, sets: ExerciseSet[]) => void;
   removeExerciseFromBlock: (exerciseId: string) => void;
   setRestTimer: (seconds: number | null) => void;
   setPendingExercise: (id: string, name: string, mode: TrackingMode) => void;
+  beginEditingExercise: (exerciseIndex: number) => void;
+  cancelEditingExercise: () => void;
   setActiveSet: (exerciseIndex: number | null, setIndex: number | null) => void;
   advanceActiveSet: (
     exerciseIndex: number,
@@ -125,6 +130,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   pendingExerciseId: null,
   pendingExerciseName: null,
   pendingExerciseMode: null,
+  editingExerciseIndex: null,
 
   loadWorkout: (workout) =>
     set({
@@ -206,6 +212,28 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       pendingExerciseId: null,
       pendingExerciseName: null,
       pendingExerciseMode: null,
+      editingExerciseIndex: null,
+    });
+    get().persist();
+  },
+
+  updateExerciseSetsInBlock: (exerciseIndex, sets) => {
+    const { workout, activeBlockIndex } = get();
+    if (!workout) return;
+    const blocks = workout.blocks.map((b, i) => {
+      if (i !== activeBlockIndex) return b;
+      const exercises = b.exercises.map((ex, ei) =>
+        ei === exerciseIndex ? { ...ex, sets } : ex,
+      );
+      return { ...b, exercises };
+    });
+    set({
+      workout: { ...workout, blocks },
+      currentView: "new-block",
+      pendingExerciseId: null,
+      pendingExerciseName: null,
+      pendingExerciseMode: null,
+      editingExerciseIndex: null,
     });
     get().persist();
   },
@@ -244,7 +272,31 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       pendingExerciseId: id,
       pendingExerciseName: name,
       pendingExerciseMode: mode,
+      editingExerciseIndex: null,
       currentView: "goal-setting",
+    }),
+
+  beginEditingExercise: (exerciseIndex) => {
+    const { workout, activeBlockIndex } = get();
+    const block = workout?.blocks[activeBlockIndex];
+    const exercise = block?.exercises[exerciseIndex];
+    if (!exercise) return;
+    const mode: TrackingMode = exercise.sets[0]?.goal.mode ?? "strength";
+    set({
+      pendingExerciseId: exercise.exerciseId,
+      pendingExerciseName: exercise.exerciseName,
+      pendingExerciseMode: mode,
+      editingExerciseIndex: exerciseIndex,
+      currentView: "goal-setting",
+    });
+  },
+
+  cancelEditingExercise: () =>
+    set({
+      pendingExerciseId: null,
+      pendingExerciseName: null,
+      pendingExerciseMode: null,
+      editingExerciseIndex: null,
     }),
 
   setActiveSet: (exerciseIndex, setIndex) =>
@@ -460,6 +512,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       pendingExerciseId: null,
       pendingExerciseName: null,
       pendingExerciseMode: null,
+      editingExerciseIndex: null,
     });
   },
 
@@ -481,5 +534,6 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       pendingExerciseId: null,
       pendingExerciseName: null,
       pendingExerciseMode: null,
+      editingExerciseIndex: null,
     }),
 }));

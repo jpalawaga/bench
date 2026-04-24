@@ -163,6 +163,8 @@ The in-memory workout session has a small UI state machine layered on top of the
 | `activeSetIndex` | highlighted set within that exercise |
 | `pendingExerciseId` | selected exercise while moving from picker to goal setting |
 | `pendingExerciseName` | selected exercise name for goal setting |
+| `pendingExerciseMode` | tracking mode carried with the pending exercise so the goal editor opens in the right shape |
+| `editingExerciseIndex` | when non-null, the index of an existing exercise in the active block that the goal editor is editing in place instead of appending a new one |
 
 ## Store Actions and State Transitions
 
@@ -182,8 +184,11 @@ The in-memory workout session has a small UI state machine layered on top of the
 ### Exercise lifecycle inside a block
 
 - `addExerciseToBlock` appends a `BlockExercise` and returns to `new-block`.
+- `updateExerciseSetsInBlock` replaces the sets of an existing `BlockExercise` in place, preserving its `id`, `exerciseId`, `exerciseName`, `notes`, and `nextSessionTargets`, then returns to `new-block`. This is the commit path for the goal editor's edit mode.
 - `removeExerciseFromBlock` deletes an exercise from the active block.
-- `setPendingExercise` moves the UI into `goal-setting` and carries the selected exercise's `trackingMode` so the goal editor opens in the right shape.
+- `setPendingExercise` moves the UI into `goal-setting` for a newly selected exercise, carrying its `trackingMode`, and clears any prior editing state.
+- `beginEditingExercise` moves the UI into `goal-setting` for an exercise already in the active block, derives the pending context from that exercise, and records its index in `editingExerciseIndex` so the commit path replaces rather than appends.
+- `cancelEditingExercise` drops the pending and editing context without writing; the workout shell back handler calls it when the user backs out of the goal editor mid-edit.
 - `setNextSessionTargets` writes next-session targets onto a `BlockExercise`.
 
 ### Set recording

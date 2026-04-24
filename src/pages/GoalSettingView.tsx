@@ -9,6 +9,7 @@ import { repository } from "@/db/repository";
 import {
   emptyActualForMode,
   emptyGoalForMode,
+  exerciseSetsToGoals,
   expandSetGoals,
   generateId,
   getSetAmount,
@@ -80,7 +81,19 @@ export function GoalSettingView() {
   const pendingExerciseId = useWorkoutStore((s) => s.pendingExerciseId);
   const pendingExerciseName = useWorkoutStore((s) => s.pendingExerciseName);
   const pendingExerciseMode = useWorkoutStore((s) => s.pendingExerciseMode);
+  const editingExerciseIndex = useWorkoutStore(
+    (s) => s.editingExerciseIndex,
+  );
+  const editingExercise = useWorkoutStore((s) => {
+    if (s.editingExerciseIndex == null || !s.workout) return null;
+    const block = s.workout.blocks[s.activeBlockIndex];
+    return block?.exercises[s.editingExerciseIndex] ?? null;
+  });
   const addExerciseToBlock = useWorkoutStore((s) => s.addExerciseToBlock);
+  const updateExerciseSetsInBlock = useWorkoutStore(
+    (s) => s.updateExerciseSetsInBlock,
+  );
+  const isEditing = editingExerciseIndex != null;
 
   const [sets, setSets] = useState<EditableSetGoal[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -89,6 +102,15 @@ export function GoalSettingView() {
     if (!pendingExerciseId || !pendingExerciseMode) return;
     setLoaded(false);
     const mode = pendingExerciseMode;
+
+    if (isEditing && editingExercise) {
+      // Seed rows directly from the existing configured sets so the user
+      // sees what they previously locked in, not a new suggestion pass.
+      const existingGoals = exerciseSetsToGoals(editingExercise.sets);
+      setSets(toEditableSetGoals(existingGoals));
+      setLoaded(true);
+      return;
+    }
 
     const load = async () => {
       const targets = await repository.getNextSessionTargets(
@@ -140,7 +162,7 @@ export function GoalSettingView() {
     };
 
     void load();
-  }, [pendingExerciseId, pendingExerciseMode]);
+  }, [pendingExerciseId, pendingExerciseMode, isEditing, editingExercise]);
 
   const updateSetGoalField = (
     index: number,
@@ -241,6 +263,12 @@ export function GoalSettingView() {
       goal: { ...goal, amount: 1 },
       actual: emptyActualForMode(mode),
     }));
+
+    if (isEditing && editingExerciseIndex != null) {
+      updateExerciseSetsInBlock(editingExerciseIndex, finalizedSets);
+      return;
+    }
+
     const exercise: BlockExercise = {
       id: generateId(),
       exerciseId: pendingExerciseId,
@@ -278,7 +306,7 @@ export function GoalSettingView() {
 
       <div className="mt-auto pb-6">
         <Button fullWidth onClick={handleLockIn}>
-          Lock In
+          {isEditing ? "Save" : "Lock In"}
         </Button>
       </div>
     </div>

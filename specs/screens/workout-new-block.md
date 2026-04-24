@@ -57,8 +57,8 @@ The UI does not ask the user to name or classify the block separately.
 ## Exercise Card Behavior
 
 - exercise cards show exercise name and a compact goal summary
-- card taps are currently a no-op
-- remove is the only active per-card action on this screen
+- tapping the body of a card opens the goal editor for that exercise, seeded with its currently configured sets
+- the remove button still deletes the exercise from the block without opening the editor
 
 ## Superset Suggestions
 

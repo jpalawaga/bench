@@ -89,6 +89,121 @@ describe("set planning flows", () => {
     });
   });
 
+  it("edits an existing planned exercise by replacing its sets in place", async () => {
+    const workout = createWorkout();
+    const block = workout.blocks[0];
+    if (!block) throw new Error("fixture block missing");
+    workout.blocks[0] = {
+      ...block,
+      exercises: [
+        {
+          id: "be-edit",
+          exerciseId: "exercise-1",
+          exerciseName: "Bench Press",
+          notes: "keep this note",
+          sets: [
+            {
+              id: "set-a",
+              setNumber: 1,
+              goal: {
+                mode: "strength",
+                reps: 5,
+                weight: 95,
+                amount: 1,
+                isProposed: false,
+              },
+              actual: { mode: "strength", reps: null, weight: null },
+            },
+            {
+              id: "set-b",
+              setNumber: 2,
+              goal: {
+                mode: "strength",
+                reps: 5,
+                weight: 95,
+                amount: 1,
+                isProposed: false,
+              },
+              actual: { mode: "strength", reps: null, weight: null },
+            },
+          ],
+          nextSessionTargets: [
+            {
+              mode: "strength",
+              reps: 6,
+              weight: 100,
+              amount: 1,
+              isProposed: false,
+            },
+          ],
+        },
+      ],
+    };
+
+    useWorkoutStore.setState({
+      workout,
+      currentView: "goal-setting",
+      activeBlockIndex: 0,
+      activeExerciseTabIndex: 0,
+      activeSetExerciseIndex: null,
+      activeSetIndex: null,
+      pendingExerciseId: "exercise-1",
+      pendingExerciseName: "Bench Press",
+      pendingExerciseMode: "strength",
+      editingExerciseIndex: 0,
+    });
+
+    render(<GoalSettingView />);
+
+    // Seeded from existing sets: single grouped row with amount=2
+    const amountSelect = await screen.findByRole("combobox", {
+      name: /Set count for S1-2/i,
+    });
+    expect(amountSelect).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText("Reps"), {
+      target: { value: "8" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("lbs"), {
+      target: { value: "135" },
+    });
+    fireEvent.change(amountSelect, { target: { value: "3" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Save/i }));
+
+    await waitFor(() => {
+      const state = useWorkoutStore.getState();
+      const exercise = state.workout?.blocks[0]?.exercises[0];
+
+      expect(state.workout?.blocks[0]?.exercises).toHaveLength(1);
+      expect(exercise?.id).toBe("be-edit");
+      expect(exercise?.notes).toBe("keep this note");
+      expect(exercise?.nextSessionTargets).toEqual([
+        {
+          mode: "strength",
+          reps: 6,
+          weight: 100,
+          amount: 1,
+          isProposed: false,
+        },
+      ]);
+      expect(exercise?.sets).toHaveLength(3);
+      expect(
+        exercise?.sets.map((set) =>
+          set.goal.mode === "strength" ? set.goal.reps : null,
+        ),
+      ).toEqual([8, 8, 8]);
+      expect(
+        exercise?.sets.map((set) =>
+          set.goal.mode === "strength" ? set.goal.weight : null,
+        ),
+      ).toEqual([135, 135, 135]);
+      expect(state.currentView).toBe("new-block");
+      expect(state.editingExerciseIndex).toBeNull();
+      expect(state.pendingExerciseId).toBeNull();
+    });
+  });
+
   it("saves grouped next-time targets with their amount", async () => {
     const workout = createWorkout();
     const firstBlock = workout.blocks[0];

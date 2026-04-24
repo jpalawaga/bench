@@ -30,6 +30,12 @@ export function WorkoutPage() {
   const setView = useWorkoutStore((s) => s.setView);
   const workout = useWorkoutStore((s) => s.workout);
   const reset = useWorkoutStore((s) => s.reset);
+  const editingExerciseIndex = useWorkoutStore(
+    (s) => s.editingExerciseIndex,
+  );
+  const cancelEditingExercise = useWorkoutStore(
+    (s) => s.cancelEditingExercise,
+  );
   const activeBlock = workout?.blocks[activeBlockIndex];
 
   useEffect(() => {
@@ -74,7 +80,12 @@ export function WorkoutPage() {
         setView("new-block");
         break;
       case "goal-setting":
-        setView("exercise-select");
+        if (editingExerciseIndex != null) {
+          cancelEditingExercise();
+          setView("new-block");
+        } else {
+          setView("exercise-select");
+        }
         break;
       case "block-in-progress":
         if (activeBlock?.status === "finished") {

@@ -19,6 +19,9 @@ export function NewBlockView() {
     (s) => s.removeExerciseFromBlock,
   );
   const setPendingExercise = useWorkoutStore((s) => s.setPendingExercise);
+  const beginEditingExercise = useWorkoutStore(
+    (s) => s.beginEditingExercise,
+  );
 
   const block = workout?.blocks[activeBlockIndex];
   const anchorIdsKey =
@@ -69,11 +72,11 @@ export function NewBlockView() {
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {block.exercises.map((ex) => (
+          {block.exercises.map((ex, index) => (
             <ExerciseCard
               key={ex.id}
               exercise={ex}
-              onClick={() => {}}
+              onClick={() => beginEditingExercise(index)}
               onRemove={() => removeExerciseFromBlock(ex.id)}
             />
           ))}

@@ -40,15 +40,30 @@ Shared row constraints:
 
 Set labels are derived from cumulative grouped order and cannot be edited directly.
 
+## Entry Modes
+
+The goal-setting screen handles two flows:
+
+- **add mode**: entered from the exercise selector; the exercise is new to the current block
+- **edit mode**: entered by tapping an already-configured exercise card on the new-block screen; the same exercise stays in place and only its sets are rewritten
+
+The two modes share one editor. The only differences are how the rows are seeded and how the screen commits changes.
+
 ## Initialization Algorithm
 
-When the screen opens for a pending exercise:
+### Seeding in add mode
+
+When the screen opens for a newly selected exercise:
 
 1. load saved next-session targets for that exercise, restricted to its current tracking mode
 2. if none exist, load last actual performed sets for that exercise, restricted to its current tracking mode
 3. if neither exists, start with one blank row in the exercise's current tracking mode
 
 Historical entries that do not match the current mode are ignored so that a mode change does not leak stale metrics from the previous mode.
+
+### Seeding in edit mode
+
+When the screen opens to edit an exercise already in the current block, seeding ignores history entirely and derives rows from the existing configured sets. Consecutive identical sets collapse into a single grouped row with the matching `amount`. No proposal badges are shown because these values were already committed by the user.
 
 Proposed rows are visually labeled:
 
@@ -65,9 +80,13 @@ If saved targets or previous actuals contain consecutive identical sets, the edi
 - set count can change either by editing the per-row amount dropdown or by adding and removing rows
 - the mode of a row is fixed by the selected exercise; the editor does not expose mode switching inline
 
-## Lock In Behavior
+## Commit Behavior
 
-On `Lock In`:
+The commit button reads `Lock In` in add mode and `Save` in edit mode.
+
+### Committing in add mode
+
+On commit:
 
 1. expand grouped rows into individual `ExerciseSet` records
 2. persist each set goal with `amount = 1`
@@ -75,6 +94,17 @@ On `Lock In`:
 4. create a `BlockExercise` with empty notes
 5. append it to the active block
 6. return to `new-block`
+
+### Committing in edit mode
+
+On commit:
+
+1. expand grouped rows into individual `ExerciseSet` records
+2. replace the existing exercise's `sets` with the expanded list and fresh actuals in the exercise's tracking mode
+3. preserve the `BlockExercise`'s `id`, `exerciseId`, `exerciseName`, `notes`, and `nextSessionTargets`
+4. return to `new-block`
+
+Backing out of the goal editor while in edit mode cancels the pending change and returns to `new-block` without writing.
 
 ## Loading State
 
