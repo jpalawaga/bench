@@ -22,10 +22,11 @@ This applies to:
 2. Make the code change.
 3. Update the relevant spec docs before finishing.
 4. If the change creates or reveals overlap between similar components or patterns, update [`specs/cleanup.md`](specs/cleanup.md).
-5. Run tests after the change. Prefer the most relevant targeted tests when available, but the task is not complete without test execution.
-6. Run a production build after the change so generated output is refreshed.
-7. Commit the completed work with a descriptive commit message.
-8. In your final summary, mention which spec files you updated, which tests you ran, whether you ran the build, and the commit you created.
+5. Write tests as appropriate to cover the feature. Do not write overly specific or brittle tests.
+6. Run tests after the change. Prefer the most relevant targeted tests when available, but the task is not complete without test execution.
+7. Run a production build after the change so generated output is refreshed.
+8. Commit the completed work with a descriptive commit message.
+9. In your final summary, mention which spec files you updated, which tests you ran, whether you ran the build, and the commit you created.
 
 ## How To Update The Spec
 
@@ -42,16 +43,21 @@ This applies to:
 - Update the affected screen spec in `specs/screens/`
 - Update any cross-cutting feature doc in `specs/features/`
 - Update component docs if shared UI changed
+- Update tests as appropriate
 
 ### Bug fix
 
 - Update the spec when the fix changes behavior, edge-case handling, constraints, or recovery behavior
 - If no spec update is needed, explicitly say so in your final summary
+- Update tests as appropriate
 
 ### Data or state change
 
 - Update [`specs/architecture/data-and-state.md`](specs/architecture/data-and-state.md)
 - Update any affected screen or feature docs
+- Update tests as appropriate
+- Ensure that migrations are handled appropriately across app versions, and that
+  compatibility is maintained.
 
 ### Routing, shell, or lifecycle change
 
