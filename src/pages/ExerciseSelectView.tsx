@@ -147,7 +147,11 @@ export function ExerciseSelectView() {
               </div>
             ) : (
               <button
-                onClick={() => setCreatingCustom(true)}
+                onClick={() => {
+                  const seed = query.trim();
+                  if (seed) setCustomName(seed);
+                  setCreatingCustom(true);
+                }}
                 className="w-full text-left px-4 py-3 rounded-lg active:bg-surface-overlay transition-colors"
               >
                 <span className="text-accent">+ Create Custom Exercise</span>

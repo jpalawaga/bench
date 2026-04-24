@@ -56,6 +56,7 @@ Selecting a row does not add the exercise immediately. It sets the pending exerc
 ### Collapsed state
 
 - one row labeled `+ Create Custom Exercise`
+- tapping the row expands the creator; if there is a non-empty search query at that moment, the query is pre-populated into the name input so the user can accept or edit it rather than retyping
 
 ### Expanded state
 
