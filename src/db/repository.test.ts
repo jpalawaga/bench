@@ -149,4 +149,104 @@ describe("getSupersetSuggestions", () => {
     const suggestions = await repository.getSupersetSuggestions(["core"], 2);
     expect(suggestions).toHaveLength(2);
   });
+
+  it("drops candidates listed in excludeExerciseIds even when they have history", async () => {
+    await db.exercises.bulkPut([
+      exercise("facepull", "Face Pull"),
+      exercise("tricep-pushdown", "Tricep Pushdown"),
+      exercise("bench", "Bench Press"),
+    ]);
+    // tricep-pushdown has supersetted with bench historically
+    await db.workouts.bulkPut([
+      completedWorkout("w1", [["facepull", "tricep-pushdown"]]),
+      completedWorkout("w2", [["tricep-pushdown", "bench"]]),
+    ]);
+
+    // Planning block anchored on facepull + tricep-pushdown, with bench
+    // already scheduled somewhere else in the workout.
+    const suggestions = await repository.getSupersetSuggestions(
+      ["facepull", "tricep-pushdown"],
+      2,
+      ["bench"],
+    );
+
+    expect(suggestions.map((e) => e.id)).not.toContain("bench");
+  });
+
+  it("does not credit same-workout pairings that never shared a block", async () => {
+    await db.exercises.bulkPut([
+      exercise("facepull", "Face Pull"),
+      exercise("tricep-pushdown", "Tricep Pushdown"),
+      exercise("bench", "Bench Press"),
+      exercise("row", "Dumbbell Row"),
+    ]);
+
+    // One workout, two distinct blocks: facepull+tricep-pushdown as a
+    // superset, and bench+row as a separate superset. Bench never shared a
+    // block with facepull or tricep-pushdown.
+    const sessionWorkout: Workout = {
+      id: "session",
+      status: "completed",
+      startedAt: 1,
+      completedAt: 2,
+      notes: "",
+      blocks: [
+        {
+          id: "b1",
+          order: 1,
+          status: "finished",
+          restTimerSeconds: null,
+          notes: "",
+          exercises: [
+            {
+              id: "b1-fp",
+              exerciseId: "facepull",
+              exerciseName: "Face Pull",
+              notes: "",
+              sets: [strengthSet("b1-fp-s")],
+            },
+            {
+              id: "b1-tp",
+              exerciseId: "tricep-pushdown",
+              exerciseName: "Tricep Pushdown",
+              notes: "",
+              sets: [strengthSet("b1-tp-s")],
+            },
+          ],
+        },
+        {
+          id: "b2",
+          order: 2,
+          status: "finished",
+          restTimerSeconds: null,
+          notes: "",
+          exercises: [
+            {
+              id: "b2-bench",
+              exerciseId: "bench",
+              exerciseName: "Bench Press",
+              notes: "",
+              sets: [strengthSet("b2-bench-s")],
+            },
+            {
+              id: "b2-row",
+              exerciseId: "row",
+              exerciseName: "Dumbbell Row",
+              notes: "",
+              sets: [strengthSet("b2-row-s")],
+            },
+          ],
+        },
+      ],
+    };
+    await db.workouts.put(sessionWorkout);
+
+    const suggestions = await repository.getSupersetSuggestions(
+      ["facepull", "tricep-pushdown"],
+      2,
+    );
+
+    expect(suggestions.map((e) => e.id)).not.toContain("bench");
+    expect(suggestions.map((e) => e.id)).not.toContain("row");
+  });
 });

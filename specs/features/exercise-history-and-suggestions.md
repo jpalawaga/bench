@@ -24,16 +24,30 @@ These queries should be treated as product features, not convenience helpers.
 
 The new-block screen surfaces up to two suggested exercises based on historical superset pairings so that common combinations like tricep pushdown alongside face pull can be added in one tap.
 
-Algorithm:
+### Scoring
+
+The scoring rule is strictly block-scoped. Being in the same workout but different blocks does not count — only historical supersets (multi-exercise blocks) contribute.
 
 1. scan completed workouts only
-2. consider finished blocks that contain more than one exercise
-3. a block contributes suggestions only when at least one of its exercises already appears in the current planning block
-4. every other exercise in that block receives one co-occurrence point per qualifying appearance
-5. exclude exercises already in the current planning block
-6. sort candidates by descending co-occurrence and take the top two
+2. inside each workout, consider finished blocks that contain more than one exercise
+3. a block contributes only when at least one of its exercises is an *anchor*, meaning it already appears in the current planning block
+4. for a contributing block, every other exercise in that block receives one co-occurrence point
+5. sort candidates by descending co-occurrence and take the top two
 
-When there is no historical pair data, the suggestion section is empty rather than falling back to generic frequency.
+Because scoring is over blocks and not workouts, an exercise that the user did in the same session as an anchor but in a separate block is not a valid suggestion on that basis alone.
+
+### Exclusion
+
+A candidate is filtered out if any of these hold:
+
+- it is already an anchor
+- it already appears anywhere else in the current workout, in any block status — planning, in-progress, or finished
+
+The second rule prevents recommending an exercise the user has already scheduled or completed earlier in the same session.
+
+When no candidate survives, the suggestion section is empty rather than falling back to generic frequency.
+
+### Tap behavior
 
 Tapping a suggestion is equivalent to picking that exercise from the exercise selector: it sets the pending exercise context (including its `trackingMode`) and moves directly to goal setting.
 

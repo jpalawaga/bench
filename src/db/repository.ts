@@ -51,8 +51,9 @@ export interface WorkoutRepository {
   getFrequentExercises(limit: number): Promise<Exercise[]>;
   getLastPerformedDates(): Promise<Record<ID, number>>;
   getSupersetSuggestions(
-    currentExerciseIds: ID[],
+    anchorExerciseIds: ID[],
     limit: number,
+    excludeExerciseIds?: ID[],
   ): Promise<Exercise[]>;
 
   // Goal lookup
@@ -195,12 +196,23 @@ class DexieWorkoutRepository implements WorkoutRepository {
   }
 
   async getSupersetSuggestions(
-    currentExerciseIds: ID[],
+    anchorExerciseIds: ID[],
     limit: number,
+    excludeExerciseIds: ID[] = [],
   ): Promise<Exercise[]> {
-    if (currentExerciseIds.length === 0 || limit <= 0) return [];
+    // Algorithm: strict block-level co-occurrence.
+    // A historical block only contributes suggestions when it is a finished
+    // block inside a completed workout AND it holds 2+ exercises AND at least
+    // one of those exercises matches an anchor. Every *other* exercise in the
+    // block gets one point per qualifying appearance. Workout-level
+    // co-occurrence (same workout, different blocks) is intentionally ignored
+    // because the suggestion models supersets, not session pairings.
+    if (anchorExerciseIds.length === 0 || limit <= 0) return [];
 
-    const exclude = new Set(currentExerciseIds);
+    const exclude = new Set<ID>([
+      ...anchorExerciseIds,
+      ...excludeExerciseIds,
+    ]);
     const workouts = await db.workouts
       .where("status")
       .equals("completed")
@@ -213,10 +225,10 @@ class DexieWorkoutRepository implements WorkoutRepository {
         if (block.exercises.length < 2) continue;
 
         const idsInBlock = new Set(block.exercises.map((e) => e.exerciseId));
-        const sharesCurrent = currentExerciseIds.some((id) =>
+        const sharesAnchor = anchorExerciseIds.some((id) =>
           idsInBlock.has(id),
         );
-        if (!sharesCurrent) continue;
+        if (!sharesAnchor) continue;
 
         for (const id of idsInBlock) {
           if (exclude.has(id)) continue;

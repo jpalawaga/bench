@@ -203,7 +203,7 @@ The persistence layer is responsible for these higher-level queries:
 - search exercises by case-insensitive name match
 - return top frequent exercises based on completed-workout appearances
 - return last performed dates for each exercise
-- return top superset suggestions for a set of currently-planned exercises, based on historical co-occurrence within finished multi-exercise blocks
+- return top superset suggestions for a set of currently-planned exercises, based on historical co-occurrence within finished multi-exercise blocks, with an optional exclusion list so the caller can drop exercises that are already scheduled elsewhere in the current workout
 - return recent actuals or next-session targets for a given exercise, filtered to a requested tracking mode so mode changes do not leak historical values from the old mode
 - return recent exercise working notes
 - return per-exercise history records for the exercise detail screen

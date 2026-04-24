@@ -66,13 +66,24 @@ When the block already contains at least one exercise, the screen shows up to tw
 
 ### Selection algorithm
 
-- scan completed workouts only
-- consider finished blocks that contain more than one exercise
-- a block contributes when any of its exercises matches one of the current block's exercises
-- every other exercise in that block gets a co-occurrence point per appearance
-- exercises already in the current block are excluded from suggestions
-- sort candidates by descending co-occurrence count and take the top two
-- if no historical co-occurrence data is available the section is empty
+The algorithm is strictly block-scoped. Same-workout pairings that were never actually supersetted do not contribute.
+
+1. scan completed workouts only
+2. inside each workout, consider finished blocks that contain more than one exercise
+3. a block contributes when at least one of its exercises is an *anchor* — an exercise currently in the planning block being configured
+4. for a contributing block, every other exercise in that block gains one co-occurrence point
+5. sort candidates by descending co-occurrence and take the top two
+
+### Exclusion rules
+
+A candidate is dropped from the final list if any of these are true:
+
+- it is already one of the anchors (already in the current block)
+- it already appears anywhere else in the current workout, in any block status — planning, in-progress, or finished
+
+This prevents the screen from recommending an exercise the user has already scheduled or completed earlier in the same session.
+
+If no candidate survives these rules, the suggestion section is empty.
 
 ### Card appearance
 

@@ -21,21 +21,29 @@ export function NewBlockView() {
   const setPendingExercise = useWorkoutStore((s) => s.setPendingExercise);
 
   const block = workout?.blocks[activeBlockIndex];
-  const exerciseIdsKey =
+  const anchorIdsKey =
     block?.exercises.map((e) => e.exerciseId).join(",") ?? "";
+  const workoutExerciseIdsKey = workout
+    ? workout.blocks
+        .flatMap((b) => b.exercises.map((e) => e.exerciseId))
+        .join(",")
+    : "";
 
   const [suggestions, setSuggestions] = useState<Exercise[]>([]);
 
   useEffect(() => {
-    if (!exerciseIdsKey) {
+    if (!anchorIdsKey) {
       setSuggestions([]);
       return;
     }
 
     let cancelled = false;
-    const ids = exerciseIdsKey.split(",");
+    const anchors = anchorIdsKey.split(",");
+    const exclude = workoutExerciseIdsKey
+      ? workoutExerciseIdsKey.split(",")
+      : [];
     void repository
-      .getSupersetSuggestions(ids, MAX_SUGGESTIONS)
+      .getSupersetSuggestions(anchors, MAX_SUGGESTIONS, exclude)
       .then((next) => {
         if (!cancelled) setSuggestions(next);
       });
@@ -43,7 +51,7 @@ export function NewBlockView() {
     return () => {
       cancelled = true;
     };
-  }, [exerciseIdsKey]);
+  }, [anchorIdsKey, workoutExerciseIdsKey]);
 
   if (!workout || !block) return null;
 
