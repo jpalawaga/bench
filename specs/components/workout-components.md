@@ -38,6 +38,28 @@ Summary card for one configured exercise inside a planning block.
 - main card tap is reserved but currently unused
 - optional remove button deletes the exercise from the block
 
+## SuggestedExerciseCard
+
+### Purpose
+
+Ghost-styled card used on the new-block screen to propose adding an additional exercise to the current block based on historical superset co-occurrence.
+
+### Shows
+
+- exercise name in muted text
+- optional muscle group as a secondary line
+- right-aligned `Add to block` pill in near-white text
+
+### Visual contract
+
+- matches the silhouette of the configured `ExerciseCard` so the two render as a continuous list
+- uses a dashed border and a softened surface instead of the solid raised surface to read as a suggestion rather than a committed row
+- omits the remove affordance and the goal summary line
+
+### Interaction
+
+- the whole card is the call to action; tapping it selects the suggested exercise, carrying the exercise's `trackingMode` into the pending context, and moves directly to `goal-setting`
+
 ## RestTimerSlider
 
 ### Purpose

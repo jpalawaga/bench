@@ -50,6 +50,10 @@ export interface WorkoutRepository {
   // Frequency
   getFrequentExercises(limit: number): Promise<Exercise[]>;
   getLastPerformedDates(): Promise<Record<ID, number>>;
+  getSupersetSuggestions(
+    currentExerciseIds: ID[],
+    limit: number,
+  ): Promise<Exercise[]>;
 
   // Goal lookup
   getLastActuals(
@@ -180,6 +184,50 @@ class DexieWorkoutRepository implements WorkoutRepository {
 
     // Sort by frequency descending, take top N
     const topIds = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id]) => id);
+
+    const raw = await db.exercises.bulkGet(topIds);
+    return raw
+      .map((ex) => (ex ? normalizeExercise(ex) : null))
+      .filter((ex): ex is Exercise => ex !== null);
+  }
+
+  async getSupersetSuggestions(
+    currentExerciseIds: ID[],
+    limit: number,
+  ): Promise<Exercise[]> {
+    if (currentExerciseIds.length === 0 || limit <= 0) return [];
+
+    const exclude = new Set(currentExerciseIds);
+    const workouts = await db.workouts
+      .where("status")
+      .equals("completed")
+      .toArray();
+
+    const cooccurrence = new Map<ID, number>();
+    for (const workout of workouts) {
+      for (const block of workout.blocks) {
+        if (block.status !== "finished") continue;
+        if (block.exercises.length < 2) continue;
+
+        const idsInBlock = new Set(block.exercises.map((e) => e.exerciseId));
+        const sharesCurrent = currentExerciseIds.some((id) =>
+          idsInBlock.has(id),
+        );
+        if (!sharesCurrent) continue;
+
+        for (const id of idsInBlock) {
+          if (exclude.has(id)) continue;
+          cooccurrence.set(id, (cooccurrence.get(id) ?? 0) + 1);
+        }
+      }
+    }
+
+    if (cooccurrence.size === 0) return [];
+
+    const topIds = [...cooccurrence.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, limit)
       .map(([id]) => id);

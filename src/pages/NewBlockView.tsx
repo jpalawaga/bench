@@ -1,7 +1,13 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ExerciseCard } from "@/components/workout/ExerciseCard";
 import { RestTimerSlider } from "@/components/workout/RestTimerSlider";
+import { SuggestedExerciseCard } from "@/components/workout/SuggestedExerciseCard";
 import { useWorkoutStore } from "@/stores/workoutStore";
+import { repository } from "@/db/repository";
+import type { Exercise } from "@/types/models";
+
+const MAX_SUGGESTIONS = 2;
 
 export function NewBlockView() {
   const workout = useWorkoutStore((s) => s.workout);
@@ -12,10 +18,34 @@ export function NewBlockView() {
   const removeExerciseFromBlock = useWorkoutStore(
     (s) => s.removeExerciseFromBlock,
   );
+  const setPendingExercise = useWorkoutStore((s) => s.setPendingExercise);
 
-  if (!workout) return null;
-  const block = workout.blocks[activeBlockIndex];
-  if (!block) return null;
+  const block = workout?.blocks[activeBlockIndex];
+  const exerciseIdsKey =
+    block?.exercises.map((e) => e.exerciseId).join(",") ?? "";
+
+  const [suggestions, setSuggestions] = useState<Exercise[]>([]);
+
+  useEffect(() => {
+    if (!exerciseIdsKey) {
+      setSuggestions([]);
+      return;
+    }
+
+    let cancelled = false;
+    const ids = exerciseIdsKey.split(",");
+    void repository
+      .getSupersetSuggestions(ids, MAX_SUGGESTIONS)
+      .then((next) => {
+        if (!cancelled) setSuggestions(next);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exerciseIdsKey]);
+
+  if (!workout || !block) return null;
 
   const hasExercises = block.exercises.length > 0;
 
@@ -37,6 +67,19 @@ export function NewBlockView() {
               exercise={ex}
               onClick={() => {}}
               onRemove={() => removeExerciseFromBlock(ex.id)}
+            />
+          ))}
+          {suggestions.map((exercise) => (
+            <SuggestedExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              onAdd={() =>
+                setPendingExercise(
+                  exercise.id,
+                  exercise.name,
+                  exercise.trackingMode,
+                )
+              }
             />
           ))}
         </div>

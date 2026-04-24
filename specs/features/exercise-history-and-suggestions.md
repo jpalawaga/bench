@@ -20,6 +20,23 @@ These queries should be treated as product features, not convenience helpers.
 - Seeded cardio machines (`Treadmill`, `Rowing Machine`, `Assault Bike`, `Stationary Bike`, `Stairmaster`, `Elliptical`) have `trackingMode: "cardio"`. All other seeded exercises have `trackingMode: "strength"`.
 - Custom exercises capture `trackingMode` at creation time based on the user's selection in the picker.
 
+## Superset Suggestions
+
+The new-block screen surfaces up to two suggested exercises based on historical superset pairings so that common combinations like tricep pushdown alongside face pull can be added in one tap.
+
+Algorithm:
+
+1. scan completed workouts only
+2. consider finished blocks that contain more than one exercise
+3. a block contributes suggestions only when at least one of its exercises already appears in the current planning block
+4. every other exercise in that block receives one co-occurrence point per qualifying appearance
+5. exclude exercises already in the current planning block
+6. sort candidates by descending co-occurrence and take the top two
+
+When there is no historical pair data, the suggestion section is empty rather than falling back to generic frequency.
+
+Tapping a suggestion is equivalent to picking that exercise from the exercise selector: it sets the pending exercise context (including its `trackingMode`) and moves directly to goal setting.
+
 ## Frequent Exercises
 
 The exercise picker shows a "My Exercises" section when not searching.
