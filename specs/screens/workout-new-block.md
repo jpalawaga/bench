@@ -89,7 +89,7 @@ If no candidate survives these rules, the suggestion section is empty.
 
 - same card silhouette as a configured exercise card so the list reads as one continuous stack
 - muted presentation: dashed border, softened surface, reduced-contrast exercise name and muscle group
-- a right-aligned pill labeled `Add to block` rendered in near-white text acts as the call to action
+- a right-aligned pill labeled `+ Superset` rendered in near-white text acts as the call to action
 - no remove affordance
 - there is no goal summary because the exercise has not yet been planned
 

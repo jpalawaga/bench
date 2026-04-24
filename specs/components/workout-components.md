@@ -48,7 +48,7 @@ Ghost-styled card used on the new-block screen to propose adding an additional e
 
 - exercise name in muted text
 - optional muscle group as a secondary line
-- right-aligned `Add to block` pill in near-white text
+- right-aligned `+ Superset` pill in near-white text
 
 ### Visual contract
 

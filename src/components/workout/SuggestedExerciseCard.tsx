@@ -12,7 +12,7 @@ export function SuggestedExerciseCard({
   return (
     <button
       onClick={onAdd}
-      aria-label={`Add ${exercise.name} to block`}
+      aria-label={`Superset ${exercise.name}`}
       className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border/60 bg-surface-raised/40 p-4 text-left transition-colors active:bg-surface-raised/60"
     >
       <div className="min-w-0">
@@ -26,7 +26,7 @@ export function SuggestedExerciseCard({
         )}
       </div>
       <span className="shrink-0 rounded-full bg-surface-overlay/60 px-3 py-1 text-xs font-semibold text-white/90">
-        Add to block
+        + Superset
       </span>
     </button>
   );
