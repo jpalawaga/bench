@@ -91,6 +91,18 @@ body {
   }
 }
 
+@keyframes hold-button-burst {
+  from {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
 .animate-exercise-pane-in-forward {
   animation: exercise-pane-in-forward 220ms ease-out;
 }
@@ -107,11 +119,16 @@ body {
   animation: exercise-pane-out-backward 220ms ease-out;
 }
 
+.animate-hold-button-burst {
+  animation: hold-button-burst 260ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-exercise-pane-in-forward,
   .animate-exercise-pane-in-backward,
   .animate-exercise-pane-out-forward,
-  .animate-exercise-pane-out-backward {
+  .animate-exercise-pane-out-backward,
+  .animate-hold-button-burst {
     animation: none;
   }
 }

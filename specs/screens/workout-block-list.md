@@ -17,7 +17,7 @@ This is the default workout subview after loading or resuming a workout. It acts
 
 ### Bottom action
 
-- full-width `Finish Workout` button
+- full-width `Finish Workout` long-hold button
 - disabled when no blocks exist
 
 ## Block Card Contents
@@ -51,6 +51,10 @@ Each block card shows:
 
 ### Finish Workout
 
+- requires the user to hold the button for about 1.5 seconds
+- while held, the button fills from left to right
+- releasing before the hold completes cancels the action and drains the fill
+- when the hold completes, the button emits a short outward burst before the app completes the workout
 - marks the workout completed
 - clears the active session store
 - returns the user to home through the workout shell

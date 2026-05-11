@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button, LongHoldButton } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { BlockCard } from "@/components/workout/BlockCard";
 import { useWorkoutStore } from "@/stores/workoutStore";
@@ -60,14 +60,14 @@ export function BlockListView() {
       )}
 
       <div className="mt-auto pb-6">
-        <Button
+        <LongHoldButton
           fullWidth
           variant="secondary"
           disabled={workout.blocks.length === 0}
-          onClick={finishWorkout}
+          onComplete={finishWorkout}
         >
           Finish Workout
-        </Button>
+        </LongHoldButton>
       </div>
 
       <Modal

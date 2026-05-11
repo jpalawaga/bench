@@ -37,6 +37,10 @@ This feature governs how a workout is created, resumed, mutated, and completed.
 
 ### Finish workout
 
+- Finish workout is a guarded long-hold action wherever it appears in the workout flow.
+- The hold lasts about 1.5 seconds. Progress is shown as a left-to-right fill inside the button.
+- Releasing before completion cancels the finish request.
+- Completing the hold shows a short outward burst, then proceeds with the finish mutation.
 - Finishing the workout changes:
   - `status` from `active` to `completed`
   - `completedAt` to the current time

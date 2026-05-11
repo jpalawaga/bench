@@ -11,7 +11,7 @@ This screen appears immediately after the user finishes a block. It gives the us
 - one prompt card per exercise
 - bottom actions:
   - `Continue Workout`
-  - `Finish Workout`
+  - `Finish Workout` long-hold button
 
 ## Per-Exercise Prompt Behavior
 
@@ -66,7 +66,9 @@ Targets are optional. The user can ignore them and continue.
 
 ### Finish Workout
 
-- complete the whole workout immediately from this screen
+- requires the same about-1.5-second hold used by the block-list finish action
+- fills while held, cancels if released early, and shows a short outward burst when the hold completes
+- complete the whole workout from this screen after the burst animation
 - save `completedAt`
 - clear the active session
 

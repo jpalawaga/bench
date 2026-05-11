@@ -23,6 +23,27 @@ Primary action component for most full-width and modal actions.
 - disabled state reduces opacity and disables pointer input
 - optional `fullWidth`
 
+## LongHoldButton
+
+### Purpose
+
+Guarded action button for high-impact actions that should not fire from an accidental tap.
+
+### Shared behavior
+
+- uses the same variants and `fullWidth` option as `Button`
+- starts progress on pointer down or Space/Enter key down
+- fills left to right over roughly 1.5 seconds by default
+- cancels and resets if the user releases, leaves, or cancels the pointer before completion
+- after the hold completes, shows a brief outward burst and then calls the completion handler
+- disabled state matches `Button`
+
+### Current scope
+
+Used for:
+
+- workout finish actions in the block list and block-finished screens
+
 ## SearchInput
 
 ### Purpose

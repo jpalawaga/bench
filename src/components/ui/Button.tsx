@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ButtonHTMLAttributes, KeyboardEvent, PointerEvent } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "success";
 
@@ -16,6 +17,16 @@ const variantClasses: Record<ButtonVariant, string> = {
   success:
     "border border-[var(--color-button-success-border)] bg-[var(--color-button-success-bg)] text-[var(--color-button-success-text)] shadow-[0_10px_30px_rgba(0,0,0,0.28)] active:bg-[var(--color-button-success-bg-active)] active:text-[var(--color-button-success-text-active)]",
 };
+
+const HOLD_COMPLETE_DELAY_MS = 260;
+
+interface LongHoldButtonProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+  variant?: ButtonVariant;
+  fullWidth?: boolean;
+  durationMs?: number;
+  onComplete: () => void | Promise<void>;
+}
 
 export function Button({
   variant = "primary",
@@ -37,6 +48,165 @@ export function Button({
       {...props}
     >
       {children}
+    </button>
+  );
+}
+
+export function LongHoldButton({
+  variant = "primary",
+  fullWidth = false,
+  durationMs = 1500,
+  onComplete,
+  className = "",
+  children,
+  disabled,
+  onPointerDown,
+  onPointerUp,
+  onPointerLeave,
+  onPointerCancel,
+  onKeyDown,
+  onKeyUp,
+  ...props
+}: LongHoldButtonProps) {
+  const [isHolding, setIsHolding] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [bursting, setBursting] = useState(false);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const completedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      clearTimers();
+    };
+  }, []);
+
+  const clearTimers = () => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (completeTimerRef.current) {
+      clearTimeout(completeTimerRef.current);
+      completeTimerRef.current = null;
+    }
+  };
+
+  const finishHold = () => {
+    holdTimerRef.current = null;
+    completedRef.current = true;
+    setIsHolding(false);
+    setProgress(1);
+    setBursting(true);
+
+    completeTimerRef.current = setTimeout(() => {
+      completeTimerRef.current = null;
+      setBursting(false);
+      setProgress(0);
+      completedRef.current = false;
+      void onComplete();
+    }, HOLD_COMPLETE_DELAY_MS);
+  };
+
+  const startHold = () => {
+    if (disabled || isHolding || completedRef.current) return;
+    clearTimers();
+    completedRef.current = false;
+    setBursting(false);
+    setIsHolding(true);
+    setProgress(1);
+    holdTimerRef.current = setTimeout(finishHold, durationMs);
+  };
+
+  const cancelHold = () => {
+    if (completedRef.current) return;
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    setIsHolding(false);
+    setProgress(0);
+  };
+
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerDown?.(event);
+    if (event.defaultPrevented) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    startHold();
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerUp?.(event);
+    cancelHold();
+  };
+
+  const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerLeave?.(event);
+    cancelHold();
+  };
+
+  const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerCancel?.(event);
+    cancelHold();
+  };
+
+  const isHoldKey = (event: KeyboardEvent<HTMLButtonElement>) =>
+    event.key === " " || event.key === "Enter";
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    onKeyDown?.(event);
+    if (event.defaultPrevented || !isHoldKey(event) || event.repeat) return;
+    event.preventDefault();
+    startHold();
+  };
+
+  const handleKeyUp = (event: KeyboardEvent<HTMLButtonElement>) => {
+    onKeyUp?.(event);
+    if (!isHoldKey(event)) return;
+    event.preventDefault();
+    cancelHold();
+  };
+
+  return (
+    <button
+      className={`
+        relative isolate overflow-visible rounded-xl px-6 py-3 text-base font-semibold
+        transition-colors duration-100 touch-none select-none
+        disabled:opacity-40 disabled:pointer-events-none
+        ${variantClasses[variant]}
+        ${fullWidth ? "w-full" : ""}
+        ${className}
+      `}
+      disabled={disabled}
+      data-holding={isHolding ? "true" : "false"}
+      data-bursting={bursting ? "true" : "false"}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onPointerCancel={handlePointerCancel}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
+      {...props}
+    >
+      <span className="absolute inset-0 z-0 overflow-hidden rounded-xl">
+        <span
+          className="absolute inset-y-0 left-0 origin-left bg-accent/35"
+          style={{
+            transform: `scaleX(${progress})`,
+            transition: isHolding
+              ? `transform ${durationMs}ms linear`
+              : "transform 160ms ease-out",
+            width: "100%",
+          }}
+        />
+      </span>
+      {bursting ? (
+        <span
+          aria-hidden="true"
+          className="animate-hold-button-burst pointer-events-none absolute inset-0 z-0 rounded-xl border border-accent/70"
+        />
+      ) : null}
+      <span className="relative z-10">{children}</span>
     </button>
   );
 }

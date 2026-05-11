@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button, LongHoldButton } from "@/components/ui/Button";
 import {
   GoalSetEditor,
   type EditableSetGoal,
@@ -99,15 +99,15 @@ export function BlockFinishedView() {
         <Button fullWidth onClick={() => setView("block-list")}>
           Continue Workout
         </Button>
-        <Button
+        <LongHoldButton
           fullWidth
           variant="secondary"
-          onClick={() => {
+          onComplete={() => {
             void finishWorkout();
           }}
         >
           Finish Workout
-        </Button>
+        </LongHoldButton>
       </div>
     </div>
   );
