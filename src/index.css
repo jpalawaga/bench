@@ -93,25 +93,47 @@ body {
 
 @keyframes hold-button-burst {
   from {
-    opacity: 0.85;
+    opacity: 0.95;
     transform: scale(1);
   }
 
   to {
     opacity: 0;
-    transform: scale(1.18);
+    transform: scale(1.32);
+  }
+}
+
+@keyframes hold-button-burst-outer {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.52);
   }
 }
 
 @keyframes hold-button-tap-feedback {
   from {
-    opacity: 0.55;
+    opacity: 0.75;
     transform: scale(1);
   }
 
   to {
     opacity: 0;
-    transform: scale(1.07);
+    transform: scale(1.12);
+  }
+}
+
+@keyframes hold-button-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
   }
 }
 
@@ -132,11 +154,19 @@ body {
 }
 
 .animate-hold-button-burst {
-  animation: hold-button-burst 260ms ease-out forwards;
+  animation: hold-button-burst 340ms ease-out forwards;
+}
+
+.animate-hold-button-burst-outer {
+  animation: hold-button-burst-outer 420ms ease-out forwards;
 }
 
 .animate-hold-button-tap-feedback {
-  animation: hold-button-tap-feedback 180ms ease-out forwards;
+  animation: hold-button-tap-feedback 220ms ease-out forwards;
+}
+
+.animate-hold-button-fill {
+  animation: hold-button-fill linear forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -145,8 +175,14 @@ body {
   .animate-exercise-pane-out-forward,
   .animate-exercise-pane-out-backward,
   .animate-hold-button-burst,
-  .animate-hold-button-tap-feedback {
+  .animate-hold-button-burst-outer,
+  .animate-hold-button-tap-feedback,
+  .animate-hold-button-fill {
     animation: none;
+  }
+
+  .animate-hold-button-fill {
+    transform: scaleX(1) !important;
   }
 }
 

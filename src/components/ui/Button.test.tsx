@@ -60,11 +60,42 @@ describe("LongHoldButton", () => {
     expect(onComplete).not.toHaveBeenCalled();
 
     act(() => {
-      vi.advanceTimersByTime(180);
+      vi.advanceTimersByTime(220);
     });
 
     expect(button.getAttribute("data-tap-feedback")).toBe("false");
     expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("keeps holding through pointer leave while the pointer is down", () => {
+    vi.useFakeTimers();
+    const onComplete = vi.fn();
+
+    render(
+      <LongHoldButton durationMs={1500} onComplete={onComplete}>
+        Finish Workout
+      </LongHoldButton>,
+    );
+
+    const button = screen.getByRole("button", { name: /Finish Workout/i });
+    fireEvent.pointerDown(button, { pointerId: 1 });
+    fireEvent.pointerLeave(button, { pointerId: 1 });
+
+    expect(button.getAttribute("data-holding")).toBe("true");
+    expect(button.getAttribute("data-tap-feedback")).toBe("false");
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    expect(button.getAttribute("data-bursting")).toBe("true");
+    expect(onComplete).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(420);
+    });
+
+    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
   it("shows the burst state before completing after a full hold", () => {
@@ -89,7 +120,7 @@ describe("LongHoldButton", () => {
     expect(onComplete).not.toHaveBeenCalled();
 
     act(() => {
-      vi.advanceTimersByTime(260);
+      vi.advanceTimersByTime(420);
     });
 
     expect(onComplete).toHaveBeenCalledTimes(1);

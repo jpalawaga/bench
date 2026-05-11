@@ -67,8 +67,8 @@ Targets are optional. The user can ignore them and continue.
 ### Finish Workout
 
 - requires the same about-1.5-second hold used by the block-list finish action
-- fills while held, cancels if released early, and gives quick taps a small pulse plus momentary minimum fill
-- shows a short outward burst when the hold completes
+- fills with green progress while held, tolerates small pointer drift, cancels if released early, and gives quick taps a green pulse plus momentary minimum fill
+- shows a prominent green outward burst when the hold completes
 - complete the whole workout from this screen after the burst animation
 - save `completedAt`
 - clear the active session

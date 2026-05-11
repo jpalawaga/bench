@@ -18,9 +18,9 @@ const variantClasses: Record<ButtonVariant, string> = {
     "border border-[var(--color-button-success-border)] bg-[var(--color-button-success-bg)] text-[var(--color-button-success-text)] shadow-[0_10px_30px_rgba(0,0,0,0.28)] active:bg-[var(--color-button-success-bg-active)] active:text-[var(--color-button-success-text-active)]",
 };
 
-const HOLD_COMPLETE_DELAY_MS = 260;
-const TAP_FEEDBACK_DELAY_MS = 180;
-const MIN_TAP_FEEDBACK_PROGRESS = 0.18;
+const HOLD_COMPLETE_DELAY_MS = 420;
+const TAP_FEEDBACK_DELAY_MS = 220;
+const MIN_TAP_FEEDBACK_PROGRESS = 0.22;
 
 interface LongHoldButtonProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
@@ -78,6 +78,7 @@ export function LongHoldButton({
   const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdStartTimeRef = useRef<number | null>(null);
+  const holdingRef = useRef(false);
   const completedRef = useRef(false);
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export function LongHoldButton({
   const finishHold = () => {
     holdTimerRef.current = null;
     holdStartTimeRef.current = null;
+    holdingRef.current = false;
     completedRef.current = true;
     setIsHolding(false);
     setTapFeedback(false);
@@ -123,10 +125,11 @@ export function LongHoldButton({
     if (disabled || isHolding || completedRef.current) return;
     clearTimers();
     completedRef.current = false;
+    holdingRef.current = true;
     setBursting(false);
     setTapFeedback(false);
     setIsHolding(true);
-    setProgress(1);
+    setProgress(0);
     holdStartTimeRef.current = performance.now();
     holdTimerRef.current = setTimeout(finishHold, durationMs);
   };
@@ -139,7 +142,8 @@ export function LongHoldButton({
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
     }
-    if (!isHolding) return;
+    if (!holdingRef.current) return;
+    holdingRef.current = false;
 
     const elapsedMs =
       holdStartTime == null ? 0 : performance.now() - holdStartTime;
@@ -167,16 +171,21 @@ export function LongHoldButton({
 
   const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerUp?.(event);
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
     cancelHold();
   };
 
   const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerLeave?.(event);
-    cancelHold();
   };
 
   const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerCancel?.(event);
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    }
     cancelHold();
   };
 
@@ -204,6 +213,11 @@ export function LongHoldButton({
         transition-colors duration-100 touch-none select-none
         disabled:opacity-40 disabled:pointer-events-none
         ${variantClasses[variant]}
+        ${
+          isHolding || bursting || tapFeedback
+            ? "border-green-400/70 shadow-[0_0_24px_rgba(74,222,128,0.22)]"
+            : ""
+        }
         ${fullWidth ? "w-full" : ""}
         ${className}
       `}
@@ -221,26 +235,34 @@ export function LongHoldButton({
     >
       <span className="absolute inset-0 z-0 overflow-hidden rounded-xl">
         <span
-          className="absolute inset-y-0 left-0 origin-left bg-accent/35"
+          className={`
+            absolute inset-y-0 left-0 w-full origin-left
+            bg-green-400/45 shadow-[0_0_22px_rgba(74,222,128,0.35)]
+            ${isHolding ? "animate-hold-button-fill" : ""}
+          `}
           style={{
             transform: `scaleX(${progress})`,
-            transition: isHolding
-              ? `transform ${durationMs}ms linear`
-              : "transform 160ms ease-out",
-            width: "100%",
+            animationDuration: isHolding ? `${durationMs}ms` : undefined,
+            transition: isHolding ? "none" : "transform 180ms ease-out",
           }}
         />
       </span>
       {bursting ? (
-        <span
-          aria-hidden="true"
-          className="animate-hold-button-burst pointer-events-none absolute inset-0 z-0 rounded-xl border border-accent/70"
-        />
+        <>
+          <span
+            aria-hidden="true"
+            className="animate-hold-button-burst pointer-events-none absolute inset-0 z-0 rounded-xl border-2 border-green-300/90 bg-green-400/20 shadow-[0_0_34px_rgba(74,222,128,0.55)]"
+          />
+          <span
+            aria-hidden="true"
+            className="animate-hold-button-burst-outer pointer-events-none absolute inset-0 z-0 rounded-xl border border-green-200/70 shadow-[0_0_46px_rgba(74,222,128,0.42)]"
+          />
+        </>
       ) : null}
       {tapFeedback ? (
         <span
           aria-hidden="true"
-          className="animate-hold-button-tap-feedback pointer-events-none absolute inset-0 z-0 rounded-xl border border-accent/35"
+          className="animate-hold-button-tap-feedback pointer-events-none absolute inset-0 z-0 rounded-xl border border-green-300/70 bg-green-400/10 shadow-[0_0_22px_rgba(74,222,128,0.28)]"
         />
       ) : null}
       <span className="relative z-10">{children}</span>

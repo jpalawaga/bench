@@ -52,9 +52,10 @@ Each block card shows:
 ### Finish Workout
 
 - requires the user to hold the button for about 1.5 seconds
-- while held, the button fills from left to right
-- releasing before the hold completes cancels the action, but quick taps still show a small pulse and momentary minimum fill before the fill drains
-- when the hold completes, the button emits a short outward burst before the app completes the workout
+- while held, the button fills from left to right with green progress and glow
+- small pointer drift while holding does not cancel the hold
+- releasing before the hold completes cancels the action, but quick taps still show a green pulse and momentary minimum fill before the fill drains
+- when the hold completes, the button emits a prominent green outward burst before the app completes the workout
 - marks the workout completed
 - clears the active session store
 - returns the user to home through the workout shell
