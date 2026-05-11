@@ -24,6 +24,7 @@ The persistent model has two roots: `Workout` and `Exercise`.
 | `muscleGroup` | string optional | metadata for selection UI |
 | `formNotes` | string optional | exercise guidance note; editable from exercise detail and from the in-progress `Notes` disclosure during logging |
 | `trackingMode` | `strength` or `cardio` | determines which numeric metrics the exercise uses when logging; chosen when a custom exercise is created and fixed for seeded exercises |
+| `nextSessionTargets` | `SetGoal[]` optional | exercise-level targets to propose next time this exercise is planned; grouped values are supported |
 
 ### Workout
 
@@ -209,7 +210,7 @@ The persistence layer is responsible for these higher-level queries:
 - return top frequent exercises based on completed-workout appearances
 - return last performed dates for each exercise
 - return top superset suggestions for a set of currently-planned exercises, based on historical co-occurrence within finished multi-exercise blocks, with an optional exclusion list so the caller can drop exercises that are already scheduled elsewhere in the current workout
-- return recent actuals or next-session targets for a given exercise, filtered to a requested tracking mode so mode changes do not leak historical values from the old mode
+- return recent actuals or next-session targets for a given exercise, filtered to a requested tracking mode so mode changes do not leak historical values from the old mode; exercise-level `nextSessionTargets` win over historical workout-embedded targets
 - return recent exercise working notes
 - return per-exercise history records for the exercise detail screen
 
@@ -229,7 +230,7 @@ When grouped `SetGoal` values are loaded into the goal-planning editors, the UI 
 
 When building a new exercise plan:
 
-1. use saved next-session targets if present
+1. use saved exercise-level next-session targets if present, otherwise saved workout-embedded next-session targets
 2. otherwise use actual values from the most recent completed session
 3. otherwise start with one empty set row
 

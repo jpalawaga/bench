@@ -1,14 +1,95 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import {
+  GoalSetEditor,
+  type EditableSetGoal,
+} from "@/components/workout/GoalSetEditor";
 import { repository, type ExerciseHistoryEntry } from "@/db/repository";
-import { formatActualMetrics, formatDateTime } from "@/lib/utils";
-import type { Exercise } from "@/types/models";
+import {
+  emptyGoalForMode,
+  formatActualMetrics,
+  formatDateTime,
+  formatGoalMetrics,
+  generateId,
+  getSetAmount,
+  groupConsecutiveSetGoals,
+} from "@/lib/utils";
+import type { Exercise, SetGoal, TrackingMode } from "@/types/models";
 
 function formatPerformedSets(entry: ExerciseHistoryEntry): string {
   return entry.performedSets
     .map((set) => formatActualMetrics(set.actual, set.goal))
     .join(", ");
+}
+
+function createEditableSetGoal(
+  goal: SetGoal,
+  setNumber: number,
+): EditableSetGoal {
+  return {
+    id: generateId(),
+    setNumber,
+    goal: {
+      ...goal,
+      amount: getSetAmount(goal),
+      isProposed: false,
+      proposalSource: undefined,
+    },
+  };
+}
+
+function renumberEditableSetGoals(
+  sets: EditableSetGoal[],
+): EditableSetGoal[] {
+  let nextSetNumber = 1;
+
+  return sets.map((set) => {
+    const amount = getSetAmount(set.goal);
+    const renumberedSet = {
+      ...set,
+      setNumber: nextSetNumber,
+      goal: {
+        ...set.goal,
+        amount,
+      },
+    };
+
+    nextSetNumber += amount;
+    return renumberedSet;
+  });
+}
+
+function createEditableSetGoals(goals: SetGoal[]): EditableSetGoal[] {
+  return renumberEditableSetGoals(
+    groupConsecutiveSetGoals(goals).map((goal) =>
+      createEditableSetGoal(goal, 0),
+    ),
+  );
+}
+
+function createDefaultTarget(mode: TrackingMode): EditableSetGoal[] {
+  return [createEditableSetGoal(emptyGoalForMode(mode), 1)];
+}
+
+function finalizeTargets(targets: EditableSetGoal[]): SetGoal[] {
+  return groupConsecutiveSetGoals(
+    targets.map((target) => ({
+      ...target.goal,
+      amount: getSetAmount(target.goal),
+      isProposed: false,
+      proposalSource: undefined,
+    })),
+  );
+}
+
+function formatTargetSetLabel(target: EditableSetGoal): string {
+  const amount = getSetAmount(target.goal);
+  const endSetNumber = target.setNumber + amount - 1;
+  return amount > 1
+    ? `S${target.setNumber}-${endSetNumber}`
+    : `S${target.setNumber}`;
 }
 
 export function ExerciseDetailPage() {
@@ -17,6 +98,9 @@ export function ExerciseDetailPage() {
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [name, setName] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const [nextTargets, setNextTargets] = useState<SetGoal[]>([]);
+  const [targetRows, setTargetRows] = useState<EditableSetGoal[]>([]);
+  const [editingTargets, setEditingTargets] = useState(false);
   const [history, setHistory] = useState<ExerciseHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -44,6 +128,26 @@ export function ExerciseDetailPage() {
       setName(nextExercise.name);
       setFormNotes(nextExercise.formNotes ?? "");
       setHistory(nextHistory);
+
+      const targets =
+        nextExercise.nextSessionTargets?.length &&
+        nextExercise.nextSessionTargets[0]?.mode === nextExercise.trackingMode
+          ? nextExercise.nextSessionTargets
+          : await repository.getNextSessionTargets(
+              exerciseId,
+              nextExercise.trackingMode,
+            );
+
+      if (cancelled) return;
+
+      const loadedTargets = targets ?? [];
+      setNextTargets(loadedTargets);
+      setTargetRows(
+        loadedTargets.length > 0
+          ? createEditableSetGoals(loadedTargets)
+          : createDefaultTarget(nextExercise.trackingMode),
+      );
+      setEditingTargets(false);
       setLoading(false);
     };
 
@@ -61,6 +165,10 @@ export function ExerciseDetailPage() {
       formNotes.trim() !== (exercise.formNotes ?? "")
     );
   }, [exercise, formNotes, name]);
+  const targetSummaryRows = useMemo(
+    () => createEditableSetGoals(nextTargets),
+    [nextTargets],
+  );
 
   const handleSave = async () => {
     if (!exercise) return;
@@ -77,6 +185,151 @@ export function ExerciseDetailPage() {
     setExercise(updatedExercise);
     setName(updatedExercise.name);
     setFormNotes(updatedExercise.formNotes ?? "");
+  };
+
+  const updateTargetField = (
+    index: number,
+    updater: (goal: SetGoal) => SetGoal,
+  ) => {
+    setTargetRows((prev) =>
+      renumberEditableSetGoals(
+        prev.map((target, i) =>
+          i === index
+            ? {
+                ...target,
+                goal: {
+                  ...updater(target.goal),
+                  isProposed: false,
+                  proposalSource: undefined,
+                },
+              }
+            : target,
+        ),
+      ),
+    );
+  };
+
+  const handleTargetRepsChange = (index: number, reps: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "strength" ? { ...goal, reps } : goal,
+    );
+
+  const handleTargetWeightChange = (index: number, weight: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "strength" ? { ...goal, weight } : goal,
+    );
+
+  const handleTargetSecondsChange = (index: number, seconds: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "cardio" ? { ...goal, seconds } : goal,
+    );
+
+  const handleTargetLevelChange = (index: number, level: number) =>
+    updateTargetField(index, (goal) =>
+      goal.mode === "cardio" ? { ...goal, level } : goal,
+    );
+
+  const handleTargetAmountChange = (index: number, amount: number) => {
+    setTargetRows((prev) =>
+      renumberEditableSetGoals(
+        prev.map((target, i) =>
+          i === index
+            ? {
+                ...target,
+                goal: {
+                  ...target.goal,
+                  amount: Math.max(1, amount),
+                  isProposed: false,
+                  proposalSource: undefined,
+                },
+              }
+            : target,
+        ),
+      ),
+    );
+  };
+
+  const handleAddTarget = () => {
+    if (!exercise) return;
+    const lastTarget = targetRows[targetRows.length - 1];
+    const baseGoal: SetGoal = lastTarget
+      ? {
+          ...lastTarget.goal,
+          amount: 1,
+          isProposed: false,
+          proposalSource: undefined,
+        }
+      : emptyGoalForMode(exercise.trackingMode);
+
+    setTargetRows((prev) =>
+      renumberEditableSetGoals([
+        ...prev,
+        createEditableSetGoal(baseGoal, 0),
+      ]),
+    );
+  };
+
+  const handleRemoveTarget = (index: number) => {
+    setTargetRows((prev) =>
+      renumberEditableSetGoals(prev.filter((_, i) => i !== index)),
+    );
+  };
+
+  const handleEditTargets = () => {
+    if (!exercise) return;
+    setTargetRows(
+      nextTargets.length > 0
+        ? createEditableSetGoals(nextTargets)
+        : createDefaultTarget(exercise.trackingMode),
+    );
+    setEditingTargets(true);
+  };
+
+  const handleCancelTargets = () => {
+    if (!exercise) return;
+    setTargetRows(
+      nextTargets.length > 0
+        ? createEditableSetGoals(nextTargets)
+        : createDefaultTarget(exercise.trackingMode),
+    );
+    setEditingTargets(false);
+  };
+
+  const handleSaveTargets = async () => {
+    if (!exercise) return;
+    const savedTargets = finalizeTargets(targetRows);
+    const updatedExercise: Exercise = {
+      ...exercise,
+      name: name.trim() || exercise.name,
+      formNotes: formNotes.trim() || undefined,
+      nextSessionTargets: savedTargets,
+    };
+
+    await repository.updateExercise(updatedExercise);
+    setExercise(updatedExercise);
+    setName(updatedExercise.name);
+    setFormNotes(updatedExercise.formNotes ?? "");
+    setNextTargets(savedTargets);
+    setTargetRows(createEditableSetGoals(savedTargets));
+    setEditingTargets(false);
+  };
+
+  const handleClearTargets = async () => {
+    if (!exercise) return;
+    const updatedExercise: Exercise = {
+      ...exercise,
+      name: name.trim() || exercise.name,
+      formNotes: formNotes.trim() || undefined,
+      nextSessionTargets: undefined,
+    };
+
+    await repository.updateExercise(updatedExercise);
+    setExercise(updatedExercise);
+    setName(updatedExercise.name);
+    setFormNotes(updatedExercise.formNotes ?? "");
+    setNextTargets([]);
+    setTargetRows(createDefaultTarget(updatedExercise.trackingMode));
+    setEditingTargets(false);
   };
 
   const handleDelete = async () => {
@@ -163,7 +416,83 @@ export function ExerciseDetailPage() {
               rows={5}
               className="mt-2 w-full resize-none rounded-lg bg-surface-overlay/70 px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:bg-surface-overlay/85 focus:outline-none"
             />
+          </div>
 
+          <div className="rounded-2xl bg-surface-raised p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary">
+                  Next Targets
+                </p>
+                <p className="mt-1 text-sm text-text-muted">
+                  Planned goals for the next time you add this exercise.
+                </p>
+              </div>
+              {!editingTargets && (
+                <button
+                  onClick={handleEditTargets}
+                  className="shrink-0 text-sm font-medium text-accent active:opacity-70"
+                >
+                  {nextTargets.length > 0 ? "Edit" : "Configure"}
+                </button>
+              )}
+            </div>
+
+            {editingTargets ? (
+              <div className="mt-4">
+                <GoalSetEditor
+                  sets={targetRows}
+                  onRepsChange={handleTargetRepsChange}
+                  onWeightChange={handleTargetWeightChange}
+                  onSecondsChange={handleTargetSecondsChange}
+                  onLevelChange={handleTargetLevelChange}
+                  onAmountChange={handleTargetAmountChange}
+                  onRemoveSet={handleRemoveTarget}
+                  onAddSet={handleAddTarget}
+                />
+                <div className="mt-2.5 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={handleCancelTargets}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => void handleSaveTargets()}
+                  >
+                    Save Targets
+                  </Button>
+                </div>
+                {exercise.nextSessionTargets?.length ? (
+                  <button
+                    onClick={() => void handleClearTargets()}
+                    className="mt-3 w-full text-sm font-medium text-text-muted active:text-danger"
+                  >
+                    Clear Targets
+                  </button>
+                ) : null}
+              </div>
+            ) : nextTargets.length === 0 ? (
+              <p className="mt-4 text-sm text-text-muted">No targets set.</p>
+            ) : (
+              <div className="mt-4 flex flex-col gap-2">
+                {targetSummaryRows.map((target) => (
+                  <div
+                    key={target.id}
+                    className="flex items-center justify-between gap-3 rounded-lg bg-surface-overlay/32 px-3 py-2 text-sm"
+                  >
+                    <span className="text-text-muted">
+                      {formatTargetSetLabel(target)}
+                    </span>
+                    <span className="font-medium text-text-primary">
+                      {formatGoalMetrics(target.goal)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-3">

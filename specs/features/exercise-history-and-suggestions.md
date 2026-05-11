@@ -87,9 +87,10 @@ The matching is implemented as normalized compact-string search over the exercis
 
 When the user selects an exercise and enters goal setting, the app builds proposed goal rows with this precedence:
 
-1. saved `nextSessionTargets` for that exercise, restricted to the current tracking mode
-2. last actual performed sets from the most recent completed workout for that exercise, restricted to the current tracking mode
-3. one blank set row in the current tracking mode
+1. saved exercise-level `nextSessionTargets` for that exercise, restricted to the current tracking mode
+2. saved workout-embedded `nextSessionTargets` from the latest completed workout entry for that exercise, restricted to the current tracking mode
+3. last actual performed sets from the most recent completed workout for that exercise, restricted to the current tracking mode
+4. one blank set row in the current tracking mode
 
 Because both lookups are mode-filtered, changing an exercise's tracking mode later never proposes stale metrics from the previous mode. If an exercise has history in only the other mode, the screen falls through to the blank-row case.
 
@@ -100,6 +101,12 @@ Proposed rows preserve a source label:
 
 The UI uses that source to change the badge text and color.
 Consecutive identical suggested sets stay grouped through the planning editor by increasing `amount` rather than expanding into repeated visible rows.
+
+## Exercise-Level Next Targets
+
+The exercise detail screen can configure `Exercise.nextSessionTargets` directly. These targets use the same grouped `SetGoal` shape as workout-embedded next-session targets and are filtered by the exercise's current tracking mode.
+
+Exercise-level targets take precedence over historical workout-embedded targets when goal planning suggests rows. Historical workout-embedded targets are still used as fallback so workouts completed before this field existed continue to seed the editor.
 
 ## Working Note History
 

@@ -17,6 +17,7 @@ export interface Exercise {
   muscleGroup?: string;
   formNotes?: string;
   trackingMode: TrackingMode;
+  nextSessionTargets?: SetGoal[];
 }
 
 // ─── Set-level data ─────────────────────────────────────

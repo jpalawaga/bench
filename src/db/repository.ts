@@ -153,7 +153,9 @@ class DexieWorkoutRepository implements WorkoutRepository {
   }
 
   async updateExercise(exercise: Exercise): Promise<void> {
-    await db.exercises.put(exercise);
+    const normalized = normalizeExercise(exercise);
+    if (!normalized) return;
+    await db.exercises.put(normalized);
   }
 
   async deleteExercise(id: ID): Promise<void> {
@@ -305,6 +307,14 @@ class DexieWorkoutRepository implements WorkoutRepository {
     exerciseId: ID,
     mode: TrackingMode,
   ): Promise<SetGoal[] | undefined> {
+    const exercise = normalizeExercise(await db.exercises.get(exerciseId));
+    if (
+      exercise?.nextSessionTargets?.length &&
+      exercise.nextSessionTargets[0]?.mode === mode
+    ) {
+      return exercise.nextSessionTargets;
+    }
+
     const workouts = await db.workouts
       .where("status")
       .equals("completed")

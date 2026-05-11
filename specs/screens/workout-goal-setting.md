@@ -55,9 +55,10 @@ The two modes share one editor. The only differences are how the rows are seeded
 
 When the screen opens for a newly selected exercise:
 
-1. load saved next-session targets for that exercise, restricted to its current tracking mode
-2. if none exist, load last actual performed sets for that exercise, restricted to its current tracking mode
-3. if neither exists, start with one blank row in the exercise's current tracking mode
+1. load saved exercise-level next-session targets for that exercise, restricted to its current tracking mode
+2. if none exist, load saved workout-embedded next-session targets for that exercise, restricted to its current tracking mode
+3. if none exist, load last actual performed sets for that exercise, restricted to its current tracking mode
+4. if neither exists, start with one blank row in the exercise's current tracking mode
 
 Historical entries that do not match the current mode are ignored so that a mode change does not leak stale metrics from the previous mode.
 

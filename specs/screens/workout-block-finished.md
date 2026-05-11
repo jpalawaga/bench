@@ -75,7 +75,8 @@ Targets are optional. The user can ignore them and continue.
 
 ## Reimplementation Notes
 
-- this screen is not just confirmation; it is the only place the user can explicitly author next-session targets after finishing a block
+- this screen is not just confirmation; it is the only place inside the workout flow where the user can explicitly author next-session targets after finishing a block
+- exercise-level targets can also be configured later from [Exercise Detail](exercise-detail.md)
 - the expanded editor is shared with the pre-block goal-setting flow so both screens use the same grouped-count row model
 
 ## Related Docs

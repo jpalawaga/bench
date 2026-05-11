@@ -70,7 +70,7 @@ Import rejects payloads that do not match the benchpress backup schema. Validati
 
 - backup metadata fields, including a supported `version` value
 - workout shape
-- exercise shape
+- exercise shape, including optional exercise-level `nextSessionTargets`
 - nested blocks, sets, goals, and actuals in either the legacy flat shape or the mode-tagged discriminated-union shape
 
 The import path is strict by design because a restore fully replaces local data. An entry that fails normalization aborts the import before any write occurs.

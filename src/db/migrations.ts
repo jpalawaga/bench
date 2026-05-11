@@ -53,6 +53,10 @@ export function normalizeExercise(raw: unknown): Exercise | null {
       ? trackingMode
       : inferLegacyTrackingMode(name);
 
+  const nextSessionTargets = Array.isArray(raw.nextSessionTargets)
+    ? raw.nextSessionTargets.map((g) => normalizeSetGoal(g, mode))
+    : undefined;
+
   return {
     id,
     name,
@@ -60,6 +64,7 @@ export function normalizeExercise(raw: unknown): Exercise | null {
     muscleGroup: typeof muscleGroup === "string" ? muscleGroup : undefined,
     formNotes: typeof formNotes === "string" ? formNotes : undefined,
     trackingMode: mode,
+    ...(nextSessionTargets !== undefined ? { nextSessionTargets } : {}),
   };
 }
 

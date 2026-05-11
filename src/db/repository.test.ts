@@ -250,3 +250,54 @@ describe("getSupersetSuggestions", () => {
     expect(suggestions.map((e) => e.id)).not.toContain("row");
   });
 });
+
+describe("getNextSessionTargets", () => {
+  beforeEach(async () => {
+    await clearDatabase();
+  });
+
+  afterEach(async () => {
+    await clearDatabase();
+  });
+
+  it("prefers exercise-level targets over historical block targets", async () => {
+    await db.exercises.put({
+      ...exercise("bench", "Bench Press"),
+      nextSessionTargets: [
+        {
+          mode: "strength",
+          reps: 10,
+          weight: 115,
+          amount: 2,
+          isProposed: false,
+        },
+      ],
+    });
+
+    const workout = completedWorkout("w1", [["bench", "row"]], 1);
+    const blockExercise = workout.blocks[0]?.exercises[0];
+    if (!blockExercise) throw new Error("fixture block exercise missing");
+    blockExercise.nextSessionTargets = [
+      {
+        mode: "strength",
+        reps: 8,
+        weight: 100,
+        amount: 1,
+        isProposed: false,
+      },
+    ];
+    await db.workouts.put(workout);
+
+    await expect(
+      repository.getNextSessionTargets("bench", "strength"),
+    ).resolves.toEqual([
+      {
+        mode: "strength",
+        reps: 10,
+        weight: 115,
+        amount: 2,
+        isProposed: false,
+      },
+    ]);
+  });
+});

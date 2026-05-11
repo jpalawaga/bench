@@ -17,6 +17,7 @@ This file documents areas where the current implementation has overlapping compo
 | Text inputs | `Input` exists, `SearchInput` is separate, and most textareas and text fields are inline | decide whether to keep fully custom fields or create a small shared field system |
 | Notes UI | exercise guidance disclosures, working-note entry, and working-note history rows should read as one coherent note system | extract guidance-note and working-note presentation primitives |
 | Inline icon buttons | many screens repeat the same rounded icon-button treatment for back, delete, and utility actions | create a small icon-button primitive with semantic variants |
+| Next-target editors | block-finished and exercise detail both implement grouped next-session target editing around `GoalSetEditor` | extract a next-target editor shell with summary, edit, save, cancel, and clear affordances |
 | In-progress set rows | the shared `GoalSetEditor` now covers pre-block and next-session goal entry, but in-progress logging still has its own row layout | decide whether the actual-entry row family should share more structure with goal editing |
 
 ## Behavior-Level Cleanup

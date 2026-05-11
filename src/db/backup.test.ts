@@ -14,6 +14,15 @@ const sampleExercise: Exercise = {
   isCustom: false,
   muscleGroup: "Chest",
   trackingMode: "strength",
+  nextSessionTargets: [
+    {
+      mode: "strength",
+      reps: 8,
+      weight: 185,
+      amount: 3,
+      isProposed: false,
+    },
+  ],
 };
 
 const sampleCardioExercise: Exercise = {
