@@ -103,6 +103,18 @@ body {
   }
 }
 
+@keyframes hold-button-tap-feedback {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(1.07);
+  }
+}
+
 .animate-exercise-pane-in-forward {
   animation: exercise-pane-in-forward 220ms ease-out;
 }
@@ -123,12 +135,17 @@ body {
   animation: hold-button-burst 260ms ease-out forwards;
 }
 
+.animate-hold-button-tap-feedback {
+  animation: hold-button-tap-feedback 180ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-exercise-pane-in-forward,
   .animate-exercise-pane-in-backward,
   .animate-exercise-pane-out-forward,
   .animate-exercise-pane-out-backward,
-  .animate-hold-button-burst {
+  .animate-hold-button-burst,
+  .animate-hold-button-tap-feedback {
     animation: none;
   }
 }

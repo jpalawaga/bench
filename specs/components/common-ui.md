@@ -34,7 +34,8 @@ Guarded action button for high-impact actions that should not fire from an accid
 - uses the same variants and `fullWidth` option as `Button`
 - starts progress on pointer down or Space/Enter key down
 - fills left to right over roughly 1.5 seconds by default
-- cancels and resets if the user releases, leaves, or cancels the pointer before completion
+- if released before completion, shows a small outward pulse and keeps at least a short visible fill moment before resetting
+- cancels if the user releases, leaves, or cancels the pointer before completion
 - after the hold completes, shows a brief outward burst and then calls the completion handler
 - disabled state matches `Button`
 

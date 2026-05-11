@@ -19,6 +19,8 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const HOLD_COMPLETE_DELAY_MS = 260;
+const TAP_FEEDBACK_DELAY_MS = 180;
+const MIN_TAP_FEEDBACK_PROGRESS = 0.18;
 
 interface LongHoldButtonProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
@@ -71,8 +73,11 @@ export function LongHoldButton({
   const [isHolding, setIsHolding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [bursting, setBursting] = useState(false);
+  const [tapFeedback, setTapFeedback] = useState(false);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdStartTimeRef = useRef<number | null>(null);
   const completedRef = useRef(false);
 
   useEffect(() => {
@@ -90,12 +95,18 @@ export function LongHoldButton({
       clearTimeout(completeTimerRef.current);
       completeTimerRef.current = null;
     }
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
   };
 
   const finishHold = () => {
     holdTimerRef.current = null;
+    holdStartTimeRef.current = null;
     completedRef.current = true;
     setIsHolding(false);
+    setTapFeedback(false);
     setProgress(1);
     setBursting(true);
 
@@ -113,19 +124,38 @@ export function LongHoldButton({
     clearTimers();
     completedRef.current = false;
     setBursting(false);
+    setTapFeedback(false);
     setIsHolding(true);
     setProgress(1);
+    holdStartTimeRef.current = performance.now();
     holdTimerRef.current = setTimeout(finishHold, durationMs);
   };
 
   const cancelHold = () => {
     if (completedRef.current) return;
+    const holdStartTime = holdStartTimeRef.current;
+    holdStartTimeRef.current = null;
     if (holdTimerRef.current) {
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
     }
+    if (!isHolding) return;
+
+    const elapsedMs =
+      holdStartTime == null ? 0 : performance.now() - holdStartTime;
+    const visibleProgress = Math.max(
+      MIN_TAP_FEEDBACK_PROGRESS,
+      Math.min(1, elapsedMs / durationMs),
+    );
+
     setIsHolding(false);
-    setProgress(0);
+    setTapFeedback(true);
+    setProgress(visibleProgress);
+    feedbackTimerRef.current = setTimeout(() => {
+      feedbackTimerRef.current = null;
+      setTapFeedback(false);
+      setProgress(0);
+    }, TAP_FEEDBACK_DELAY_MS);
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
@@ -180,6 +210,7 @@ export function LongHoldButton({
       disabled={disabled}
       data-holding={isHolding ? "true" : "false"}
       data-bursting={bursting ? "true" : "false"}
+      data-tap-feedback={tapFeedback ? "true" : "false"}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
@@ -204,6 +235,12 @@ export function LongHoldButton({
         <span
           aria-hidden="true"
           className="animate-hold-button-burst pointer-events-none absolute inset-0 z-0 rounded-xl border border-accent/70"
+        />
+      ) : null}
+      {tapFeedback ? (
+        <span
+          aria-hidden="true"
+          className="animate-hold-button-tap-feedback pointer-events-none absolute inset-0 z-0 rounded-xl border border-accent/35"
         />
       ) : null}
       <span className="relative z-10">{children}</span>

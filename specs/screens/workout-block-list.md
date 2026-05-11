@@ -53,7 +53,7 @@ Each block card shows:
 
 - requires the user to hold the button for about 1.5 seconds
 - while held, the button fills from left to right
-- releasing before the hold completes cancels the action and drains the fill
+- releasing before the hold completes cancels the action, but quick taps still show a small pulse and momentary minimum fill before the fill drains
 - when the hold completes, the button emits a short outward burst before the app completes the workout
 - marks the workout completed
 - clears the active session store
