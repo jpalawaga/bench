@@ -22,6 +22,12 @@ This is the read-only detail view for one completed workout. It is entered from 
 - workout date as the title
 - duration on the right
 
+### Top action
+
+- `Copy Workout` for completed workouts
+- copy state changes the label to `Copied Workout` or `Copy Failed`
+- positioned above the workout block content so sharing is available without scrolling
+
 ### Main content
 
 - empty state if the workout contains no blocks
@@ -29,7 +35,6 @@ This is the read-only detail view for one completed workout. It is entered from 
 
 ### Footer actions
 
-- `Copy Workout` for completed workouts
 - `Delete Workout`
 
 ## Block Card Contents

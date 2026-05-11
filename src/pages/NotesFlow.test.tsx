@@ -236,4 +236,32 @@ describe("note surfaces", () => {
     expect(screen.queryByText("Legacy block note that should stay hidden")).toBeNull();
     expect(screen.getByText("Session-specific working note")).toBeTruthy();
   });
+
+  it("shows copy workout above workout detail content", () => {
+    const workout = createWorkout({
+      status: "completed",
+      completedAt: 1_700_000_100_000,
+    });
+
+    render(
+      <WorkoutDetail
+        workout={workout}
+        onDelete={() => {}}
+        onClose={() => {}}
+      />,
+    );
+
+    const copyButton = screen.getByRole("button", { name: /Copy Workout/i });
+    const firstBlock = screen.getByText("Block 1");
+    const deleteButton = screen.getByRole("button", { name: /Delete Workout/i });
+
+    expect(
+      copyButton.compareDocumentPosition(firstBlock) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      firstBlock.compareDocumentPosition(deleteButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });

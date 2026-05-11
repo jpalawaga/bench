@@ -63,6 +63,18 @@ export function WorkoutDetail({
         <span className="text-text-muted text-sm ml-auto">{duration}</span>
       </header>
 
+      {workout.completedAt != null && (
+        <div className="pb-4">
+          <Button fullWidth onClick={() => void handleCopyWorkout()}>
+            {copyState === "copied"
+              ? "Copied Workout"
+              : copyState === "error"
+                ? "Copy Failed"
+                : "Copy Workout"}
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 flex-1">
         {workout.blocks.length === 0 ? (
           <p className="text-text-muted text-center mt-8">
@@ -114,15 +126,6 @@ export function WorkoutDetail({
       </div>
 
       <div className="mt-auto flex flex-col gap-3 py-6">
-        {workout.completedAt != null && (
-          <Button fullWidth onClick={() => void handleCopyWorkout()}>
-            {copyState === "copied"
-              ? "Copied Workout"
-              : copyState === "error"
-                ? "Copy Failed"
-                : "Copy Workout"}
-          </Button>
-        )}
         <Button fullWidth variant="danger" onClick={onDelete}>
           Delete Workout
         </Button>

@@ -27,8 +27,8 @@ Full-screen read-only detail view for a completed workout, rendered inside the l
 ### Shows
 
 - workout date and duration
+- copy workout action above the detail content
 - block list with exercises, goal-to-actual set rows, and optional working notes
-- copy workout action
 - delete workout action
 
 ### Special behavior
