@@ -244,14 +244,14 @@ export function formatActualMetrics(
 
 function formatPerformedToken(goal: SetGoal, actual: SetActual): string {
   if (goal.mode === "strength" && actual.mode === "strength") {
-    const reps = actual.reps ?? goal.reps;
-    const weight = actual.weight ?? goal.weight;
+    const reps = actual.reps ?? "—";
+    const weight = actual.weight ?? "—";
     return `${reps}@${weight}`;
   }
   if (goal.mode === "cardio" && actual.mode === "cardio") {
-    const seconds = actual.seconds ?? goal.seconds;
-    const level = actual.level ?? goal.level;
-    return `${formatDurationCompact(seconds)}@L${level}`;
+    const time = actual.seconds == null ? "—" : formatDurationCompact(actual.seconds);
+    const level = actual.level == null ? "—" : `L${actual.level}`;
+    return `${time}@${level}`;
   }
   return "—";
 }

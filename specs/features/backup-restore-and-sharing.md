@@ -85,6 +85,8 @@ The exported text format is intentionally plain:
 - each exercise becomes a line
 - supersets use box-drawing prefixes to show grouped exercises
 - each line contains the exercise name and a compressed set sequence where every set renders as a mode-specific token (`reps@weight` for strength, `duration@Llevel` for cardio)
+- tokens are based on actual completed values rather than planned goals
+- missing actual values render as `—`; for example, a skipped strength set copies as `—@—`
 - consecutive identical tokens within one line are compressed with `xN`
 
 This is optimized for pasting into notes, messages, or chat.

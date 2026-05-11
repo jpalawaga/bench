@@ -64,6 +64,8 @@ The clipboard export is deliberately compact:
 - each set is represented as a token that reflects the tracking mode:
   - strength sets render as `reps@weight`, for example `8@135`
   - cardio sets render as `duration@Llevel`, for example `10:00@L7`
+- copied set tokens use actual completed values, not planned goals
+- missing actual metrics render as `—`, so an uncompleted strength set copies as `—@—`
 - repeated identical set tokens inside one exercise line are compressed using `xN`
 
 This format is meant for quick sharing rather than round-trippable import.
